@@ -1,0 +1,71 @@
+/* 登录页面专用样式 */
+.login-container {
+  width: 450px;
+  height: 100%;
+  background-color: white;
+  border-radius: 20px;
+  text-align: center;
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: -30px;
+}
+
+.login-title {
+  color: #3498db;
+  font-size: 28px;
+  margin-bottom: 70px;
+  font-weight: bold;
+}
+
+.input-group {
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.login-form label {
+  display: block;
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 0.8em;
+  text-align: end;
+}
+
+#email,
+#code {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #eee;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.login-button:hover {
+  background-color: #e0e0e0;
+}
+
+.login-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 8px;
+  display: block;
+}
