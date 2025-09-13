@@ -1,4 +1,23 @@
-/* 登录页面专用样式 */
+/* 新增消息容器样式 */
+.message-container {
+  color: #e74c3c;
+  font-size: 14px;
+  margin: -10px 0 15px;
+  text-align: left;
+  padding-left: 5px;
+}
+
+/* Toast成功样式 */
+.Toastify__toast--success {
+  background-color: #2ecc71;
+}
+
+/* Toast错误样式 */
+.Toastify__toast--error {
+  background-color: #e74c3c;
+}
+
+/* 其他原有样式保持不变 */
 .login-container {
   width: 450px;
   height: 100%;
@@ -20,16 +39,8 @@
 }
 
 .input-group {
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   text-align: left;
-}
-
-.login-form label {
-  display: block;
-  color: #333;
-  margin-bottom: 8px;
-  font-size: 0.8em;
-  text-align: end;
 }
 
 #email,
@@ -40,6 +51,30 @@
   border-radius: 4px;
   font-size: 16px;
   box-sizing: border-box;
+}
+
+.code-input-group {
+  display: flex;
+  align-items: center;
+}
+
+.get-code-button {
+  margin-left: 10px;
+  padding: 12px 16px;
+  background-color: #3498db;
+  height:6vh;
+  width:20vh;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.get-code-button.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .login-button {
@@ -61,11 +96,4 @@
 .login-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
-}
-
-.error-message {
-  color: #e74c3c;
-  font-size: 14px;
-  margin-top: 8px;
-  display: block;
 }
