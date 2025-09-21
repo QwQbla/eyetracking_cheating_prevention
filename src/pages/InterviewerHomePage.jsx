@@ -2,88 +2,133 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_ENDPOINTS } from '../api';
 import '../styles/InterviewerHomePage.css';
-import DateTimePicker from 'react-datetime-picker';
-import 'react-datetime-picker/dist/DateTimePicker.css';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import RoleSwitcher from '../components/RoleSwitcher';
 
 const InterviewerHome = () => {
     const navigate = useNavigate();
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [intervieweeEmail, setIntervieweeEmail] = useState(''); // 改为邮箱
+    const [interviews, setInterviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [userEmail, setUserEmail] = useState(localStorage.getItem('email') || '');
     const [startTime, setStartTime] = useState(new Date());
-    const [endTime, setEndTime] = useState(new Date());
-    const [intervieweePhone, setIntervieweePhone] = useState('');
-    const [interviews, setInterviews] = useState([
-        {
-            id: 1,
-            intervieweeName: '张三',
-            roomId: 'ROOM123',
-            startTime: '2023-10-15 14:00',
-            endTime: '2023-10-15 15:00',
-            status: '未开始'
-        },
-        {
-            id: 2,
-            intervieweeName: '李四',
-            roomId: 'ROOM456',
-            startTime: '2023-10-15 10:00',
-            endTime: '2023-10-15 11:00',
-            status: '已结束'
-        }
-    ]);
+    const [endTime, setEndTime] = useState(() => {
+    const initialEndTime = new Date();
+    initialEndTime.setHours(initialEndTime.getHours() + 1); // 默认开始时间 +1 小时
+    return initialEndTime;
+    });
 
-    // 模拟定时更新面试状态
+
+    const fetchInterviews = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`${API_ENDPOINTS.empTaskQuery}?ygyxh=${encodeURIComponent(userEmail)}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success === false) {
+                throw new Error(result.msg);
+            }
+
+            const formattedInterviews = result.data.map(item => ({
+                id: item.msjlh,
+                intervieweeName: item.mszxm,
+                intervieweeEmail: item.mszsjh, // 改为邮箱
+                roomId: item.fjh,
+                startTime: item.kssj,
+                endTime: item.jssj,
+                status: getInterviewStatus(item.kssj, item.jssj)
+            }));
+            
+            setInterviews(formattedInterviews);
+        } catch (error) {
+            console.error('获取面试列表失败:', error);
+            toast.error(`获取面试列表失败: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getInterviewStatus = (startTimeStr, endTimeStr) => {
+        const now = new Date();
+        const startTime = new Date(startTimeStr);
+        const endTime = new Date(endTimeStr);
+        
+        if (now < startTime) return '未开始';
+        if (now >= startTime && now <= endTime) return '进行中';
+        return '已结束';
+    };
+
     useEffect(() => {
+        fetchInterviews();
+        
         const interval = setInterval(() => {
-            const now = new Date();
-            setInterviews(prevInterviews => 
-                prevInterviews.map(interview => {
-                    const start = new Date(interview.startTime);
-                    const end = new Date(interview.endTime);
-                    
-                    let status = interview.status;
-                    if (now < start) status = '未开始';
-                    else if (now >= start && now <= end) status = '进行中';
-                    else if (now > end) status = '已结束';
-                    
-                    return {...interview, status};
-                })
-            );
-        }, 60000); // 每分钟检查一次
+            setInterviews(prev => prev.map(item => ({
+                ...item,
+                status: getInterviewStatus(item.startTime, item.endTime)
+            })));
+        }, 60000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [userEmail]); 
 
     const handleLogout = () => {
-        // 删除用户登录状态逻辑
         localStorage.removeItem('token');
+        localStorage.removeItem('email');
         navigate('/');
     };
 
-    const handleCreateInterview = () => {
-        if (!intervieweePhone || !startTime || !endTime) {
+    const handleCreateInterview = async () => {
+        if (!intervieweeEmail || !startTime) {
             toast.error('请填写完整信息');
             return;
         }
+
         if (startTime >= endTime) {
             toast.error('结束时间必须晚于开始时间');
             return;
         }
 
-        // 生成随机房间号
-        const newRoomId = 'ROOM' + Math.floor(1000 + Math.random() * 9000);
-        
-        const newInterview = {
-            id: interviews.length + 1,
-            intervieweeName: '新面试者', // 实际应用中应从API获取
-            roomId: newRoomId,
-            startTime: startTime.toLocaleString(),
-            endTime: endTime.toLocaleString(),
-            status: '未开始'
-        };
+        // 验证邮箱格式
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(intervieweeEmail)) {
+            toast.error('请输入有效的面试者邮箱地址');
+            return;
+        }
 
-        setInterviews([...interviews, newInterview]);
-        setShowCreateModal(false);
-        toast.success('面试创建成功');
+        try {
+            const response = await fetch(API_ENDPOINTS.empTaskInsert, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ygyxh: userEmail,
+                    mszyxh: intervieweeEmail, // 改为邮箱
+                    kssj: startTime.toISOString(),
+                    jssj: endTime.toISOString()
+                }),
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                toast.success('面试创建成功');
+                setShowCreateModal(false);
+                setIntervieweeEmail(''); // 清空输入框
+                fetchInterviews();
+            } else {
+                toast.error(result.msg || '创建面试失败');
+            }
+        } catch (error) {
+            toast.error('网络错误，请稍后重试');
+        }
     };
 
     const handleEnterRoom = (interview) => {
@@ -91,36 +136,57 @@ const InterviewerHome = () => {
         const start = new Date(interview.startTime);
         const end = new Date(interview.endTime);
 
-        if (now < start) {
-            toast.error('面试尚未开始');
-            return;
-        }
-        if (now > end) {
-            toast.error('面试已结束');
+        if (now < start || now > end) {
+            toast.error('不在面试时间范围内');
             return;
         }
 
-        navigate(`/interview-room/${interview.roomId}`);
+        navigate(`/interviewer/content?roomId=${interview.roomId}`);
     };
 
-    const handleViewDetails = (interview) => {
-        navigate(`/interviewee-details/${interview.id}`);
+    const handleDeleteInterview = async (intervieweeEmail) => {
+        try {
+            const response = await fetch(API_ENDPOINTS.empTaskDelete, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ygyxh: userEmail,
+                    mszyxh: intervieweeEmail // 改为邮箱
+                }),
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                toast.success('删除成功');
+                fetchInterviews();
+            } else {
+                toast.error(result.msg || '删除失败');
+            }
+        } catch (error) {
+            toast.error('网络错误，请稍后重试');
+        }
+    };
+
+    const handleStartTimeChange = (date) => {
+    setStartTime(date);
+    // 如果新开始时间晚于当前结束时间，则自动调整结束时间（例如 +1 小时）
+    if (date >= endTime) {
+        const newEndTime = new Date(date);
+        newEndTime.setHours(newEndTime.getHours() + 1);
+        setEndTime(newEndTime);
+    }
     };
 
     return (
         <div className="interviewer-home">
             <ToastContainer position="top-center" autoClose={3000} />
             
-            {/* 标题栏 */}
-            <header className="header">
+            <header className="homepage-header">
                 <h1>基于眼动分析的防大语言模型作弊的面试系统</h1>
                 <div className="header-buttons">
-                    <button 
-                        className="interviewee-btn"
-                        onClick={() => navigate('/interviewee/home')}
-                    >
-                        面试者
-                    </button>
+                    <RoleSwitcher currentRole="interviewer" />
                     <button className="user-center-btn" onClick={() => navigate('/interviewer/profile')}>
                         用户中心
                     </button>
@@ -130,7 +196,6 @@ const InterviewerHome = () => {
                 </div>
             </header>
 
-            {/* 主要内容区 */}
             <main className="main-content">
                 <div className="action-bar">
                     <button 
@@ -141,82 +206,107 @@ const InterviewerHome = () => {
                     </button>
                 </div>
 
-                {/* 面试列表 */}
                 <div className="interview-list">
                     <h2>面试任务列表</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>面试者姓名</th>
-                                <th>房间号</th>
-                                <th>开始时间</th>
-                                <th>状态</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {interviews.map(interview => (
-                                <tr key={interview.id}>
-                                    <td>{interview.intervieweeName}</td>
-                                    <td>{interview.roomId}</td>
-                                    <td>{interview.startTime}</td>
-                                    <td className={`status ${interview.status}`}>
-                                        {interview.status}
-                                    </td>
-                                    <td>
-                                        <button 
-                                            className="view-btn"
-                                            onClick={() => handleViewDetails(interview)}
-                                        >
-                                            查看
-                                        </button>
-                                        <button 
-                                            className="enter-btn"
-                                            onClick={() => handleEnterRoom(interview)}
-                                        >
-                                            进入
-                                        </button>
-                                    </td>
+                    {loading ? (
+                        <div className="loading">加载中...</div>
+                    ) : interviews.length === 0 ? (
+                        <div className="no-data">暂无面试任务</div>
+                    ) : (
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>面试者姓名</th>
+                                    <th>面试者邮箱</th>
+                                    <th>房间号</th>
+                                    <th>开始时间</th>
+                                    <th>结束时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {interviews.map(interview => (
+                                    <tr key={interview.id}>
+                                        <td>{interview.intervieweeName}</td>
+                                        <td>{interview.intervieweeEmail}</td>
+                                        <td>{interview.roomId}</td>
+                                        <td>{new Date(interview.startTime).toLocaleString()}</td>
+                                        <td>{new Date(interview.endTime).toLocaleString()}</td>
+                                        <td className={`status ${interview.status}`}>
+                                            {interview.status}
+                                        </td>
+                                        <td>
+                                            <button 
+                                                className="enter-btn"
+                                                onClick={() => handleEnterRoom(interview)}
+                                                disabled={interview.status !== '进行中'}
+                                            >
+                                                进入
+                                            </button>
+                                            <button 
+                                                className="delete-btn"
+                                                onClick={() => handleDeleteInterview(interview.intervieweeEmail)}
+                                            >
+                                                删除
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </main>
 
-            {/* 创建面试模态框 */}
-            {showCreateModal && (
+             {showCreateModal && (
                 <div className="modal-overlay">
                     <div className="create-modal">
                         <h3>创建新面试</h3>
                         <div className="form-group">
-                            <label>面试者手机号</label>
+                            <label>面试者邮箱</label>
                             <input
-                                type="text"
-                                value={intervieweePhone}
-                                onChange={(e) => setIntervieweePhone(e.target.value)}
-                                placeholder="请输入面试者手机号"
+                                type="email"
+                                value={intervieweeEmail}
+                                onChange={(e) => setIntervieweeEmail(e.target.value)}
+                                placeholder="请输入面试者邮箱"
                             />
                         </div>
                         <div className="form-group">
                             <label>开始时间</label>
-                            <DateTimePicker
-                                onChange={setStartTime}
-                                value={startTime}
-                                format="yyyy-MM-dd HH:mm"
-                            />
+                            <div className="datetime-picker-container">
+                                <DatePicker
+                                    selected={startTime}
+                                    onChange={handleStartTimeChange} // 替换原来的 setStartTime
+                                    showTimeSelect
+                                    timeFormat="HH:mm"
+                                    timeIntervals={15}
+                                    dateFormat="yyyy-MM-dd HH:mm"
+                                    minDate={new Date()}
+                                    className="datepicker-input"
+                                />
+                            </div>
                         </div>
                         <div className="form-group">
                             <label>结束时间</label>
-                            <DateTimePicker
-                                onChange={setEndTime}
-                                value={endTime}
-                                format="yyyy-MM-dd HH:mm"
-                                minDate={startTime}
-                            />
+                            <div className="datetime-picker-container">
+                               <DatePicker
+                                    selected={endTime} // 改为 endTime
+                                    onChange={setEndTime} // 改为 setEndTime
+                                    showTimeSelect
+                                    timeFormat="HH:mm"
+                                    timeIntervals={15}
+                                    dateFormat="yyyy-MM-dd HH:mm"
+                                    minDate={startTime} // 确保结束时间不早于开始时间
+                                    className="datepicker-input"
+                                />
+                            </div>
                         </div>
                         <div className="modal-buttons">
-                            <button className="cancel-btn" onClick={() => setShowCreateModal(false)}>
+                            <button className="cancel-btn" onClick={() => {
+                                setShowCreateModal(false);
+                                setIntervieweeEmail('');
+                            }}>
                                 取消
                             </button>
                             <button className="confirm-btn" onClick={handleCreateInterview}>

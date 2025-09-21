@@ -1,3 +1,4 @@
+//LoginPage.jsx
 import React, { useState } from 'react';
 import { API_ENDPOINTS } from '../api.js';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +65,7 @@ const LoginPage = () => {
             const result = await response.json();
             if (response.ok) {
                 toast.success('登录成功');
+                localStorage.setItem('email',email)
                 setTimeout(() => {
                     navigate('/interviewer/home');
                 }, 1000); 

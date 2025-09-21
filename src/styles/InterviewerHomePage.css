@@ -1,3 +1,4 @@
+/*InterviewerHomePage.css*/
 .interviewer-home {
   background-color: #f4f7f9;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -5,7 +6,7 @@
   min-height: 100vh;
 }
 
-.header {
+.homepage-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -18,7 +19,7 @@
   z-index: 1000;
 }
 
-.header h1 {
+.homepage-header h1 {
   font-size: 1.2rem;
   font-weight: bold;
 }
@@ -51,19 +52,21 @@
 }
 
 .create-btn {
-    padding: 10px 20px;
-    background-color: #2ecc71;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    color:black;
+    margin-left: 1rem;
+    background: none;
+    border: 1px solid #ccc;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+.create-btn:hover {
+  background-color: #f0f0f0;
+  border-color: #aaa;
 }
 
-.create-btn:hover {
-    background-color: #27ae60;
-}
 
 .interview-list h2 {
     color: #3498db;
@@ -92,10 +95,10 @@ th {
 }
 
 .status.未开始 {
-    color: #f39c12;
+    color: black;
 }
 
-status.进行中 {
+.status.进行中 {
     color: #2ecc71;
 }
 
@@ -123,12 +126,12 @@ status.进行中 {
 }
 
 .enter-btn {
-    background-color: #2ecc71;
+    background-color: #2980b9;
     color: white;
 }
 
 .enter-btn:hover {
-    background-color: #27ae60;
+    background-color: #2980b9;
 }
 
 .modal-overlay {
@@ -150,6 +153,14 @@ status.进行中 {
     border-radius: 8px;
     width: 500px;
     max-width: 90%;
+}
+/* 确保模态框中的样式正确 */
+.create-modal .datetime-picker-container {
+  margin-bottom: 15px;
+}
+
+.create-modal .react-datetime-picker {
+  background: white;
 }
 
 .create-modal h3 {
@@ -209,12 +220,21 @@ status.进行中 {
     background-color: #27ae60;
 }
 
-.react-datetime-picker {
-    width: 100%;
+.datepicker-container {
+  position: relative;
+  width: 100%;
 }
 
-.react-datetime-picker__wrapper {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.datepicker-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.datepicker-input:focus {
+  outline: none;
+  border-color: #3498db;
 }
