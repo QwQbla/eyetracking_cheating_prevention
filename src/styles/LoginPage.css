@@ -44,7 +44,7 @@
 }
 
 #email,
-#code {
+#captcha {
   width: 100%;
   padding: 12px;
   border: 1px solid #ddd;
@@ -62,8 +62,7 @@
   margin-left: 10px;
   padding: 12px 16px;
   background-color: #3498db;
-  height:6vh;
-  width:20vh;
+  width:23vh;
   color: white;
   border: none;
   border-radius: 4px;

@@ -1,3 +1,4 @@
+//InterviewerHomePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -10,19 +11,48 @@ import RoleSwitcher from '../components/RoleSwitcher';
 
 const InterviewerHome = () => {
     const navigate = useNavigate();
+    let lastToastMessage = '';
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [intervieweeEmail, setIntervieweeEmail] = useState(''); // 改为邮箱
+    const [intervieweeEmail, setIntervieweeEmail] = useState('');
+    const [intervieweeName, setIntervieweeName] = useState(''); // 新增：面试者姓名
     const [interviews, setInterviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userEmail, setUserEmail] = useState(localStorage.getItem('email') || '');
     const [startTime, setStartTime] = useState(new Date());
     const [endTime, setEndTime] = useState(() => {
-    const initialEndTime = new Date();
-    initialEndTime.setHours(initialEndTime.getHours() + 1); // 默认开始时间 +1 小时
-    return initialEndTime;
+        const initialEndTime = new Date();
+        initialEndTime.setHours(initialEndTime.getHours() + 1);
+        return initialEndTime;
     });
 
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [intervieweeInfo, setIntervieweeInfo] = useState({
+        name: '',
+        gender: '',
+        uni: '',
+        major: '',
+        intv: '',
+        mszsjh: '',
+        age: '',
+        mszmm: '',
+        mszyxh: ''
+    });
 
+    const debounceToast = (() => {
+        let lastToastTime = 0;
+        const debounceTime = 2000;
+        
+        return (message, options = {}) => {
+            const now = Date.now();
+            if (now - lastToastTime > debounceTime || message !== lastToastMessage) {
+                lastToastTime = now;
+                lastToastMessage = message;
+                toast(message, options);
+            }
+        };
+    })();
+
+    // 获取面试官创建的面试任务
     const fetchInterviews = async () => {
         try {
             setLoading(true);
@@ -41,53 +71,87 @@ const InterviewerHome = () => {
             const formattedInterviews = result.data.map(item => ({
                 id: item.msjlh,
                 intervieweeName: item.mszxm,
-                intervieweeEmail: item.mszsjh, // 改为邮箱
+                intervieweeEmail: item.mszyxh,
+                intervieweePhone: item.mszsjh,
                 roomId: item.fjh,
                 startTime: item.kssj,
                 endTime: item.jssj,
-                status: getInterviewStatus(item.kssj, item.jssj)
+                status: item.zt,
+                role: 'interviewer'
             }));
             
             setInterviews(formattedInterviews);
         } catch (error) {
             console.error('获取面试列表失败:', error);
-            toast.error(`获取面试列表失败: ${error.message}`);
+            debounceToast(`获取面试列表失败: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
 
-    const getInterviewStatus = (startTimeStr, endTimeStr) => {
-        const now = new Date();
-        const startTime = new Date(startTimeStr);
-        const endTime = new Date(endTimeStr);
-        
-        if (now < startTime) return '未开始';
-        if (now >= startTime && now <= endTime) return '进行中';
-        return '已结束';
+    const handleViewInterviewee = async (email) => {
+        try {
+            const response = await fetch(`${API_ENDPOINTS.empitvQuery}?mszyxh=${encodeURIComponent(email)}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success === false) {
+                throw new Error(result.msg);
+            }
+
+            const intervieweeData = result.data && result.data.length > 0 ? result.data[0] : {};
+            setIntervieweeInfo({
+                name: intervieweeData.name || '未填写',
+                gender: intervieweeData.gender || '未填写',
+                uni: intervieweeData.uni || '未填写',
+                major: intervieweeData.major || '未填写',
+                intv: intervieweeData.intv || '未填写',
+                mszsjh: intervieweeData.mszsjh || '未填写',
+                age: intervieweeData.age || '未填写',
+                mszmm: intervieweeData.mszmm || '未填写',
+                mszyxh: intervieweeData.mszyxh || email
+            });
+            setShowViewModal(true);
+        } catch (error) {
+            console.error('获取面试者信息失败:', error);
+            debounceToast(`获取面试者信息失败: ${error.message}`);
+        }
     };
 
     useEffect(() => {
+        localStorage.setItem('userRole', 'interviewer');
+        const userRole = localStorage.getItem('userRole');
+        if (userRole === 'interviewee') {
+            navigate('/interviewee/home');
+            return;
+        }
+        
         fetchInterviews();
         
         const interval = setInterval(() => {
             setInterviews(prev => prev.map(item => ({
                 ...item,
-                status: getInterviewStatus(item.startTime, item.endTime)
+                status: item.zt
             })));
         }, 60000);
 
         return () => clearInterval(interval);
-    }, [userEmail]); 
+    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('email');
+        localStorage.removeItem('userRole');
         navigate('/');
     };
 
     const handleCreateInterview = async () => {
-        if (!intervieweeEmail || !startTime) {
+        // 验证必填字段
+        if (!intervieweeEmail || !intervieweeName || !startTime) {
             toast.error('请填写完整信息');
             return;
         }
@@ -97,36 +161,56 @@ const InterviewerHome = () => {
             return;
         }
 
-        // 验证邮箱格式
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(intervieweeEmail)) {
             toast.error('请输入有效的面试者邮箱地址');
             return;
         }
 
         try {
+            // 计算初始状态
+            const now = new Date();
+            let status = "未开始";
+            
+            if (now >= startTime && now <= endTime) {
+                status = "进行中";
+            } else if (now > endTime) {
+                status = "已结束";
+            }
+
+            // 构建请求体
+            const requestBody = {
+                mszyxh: intervieweeEmail,
+                ygyxh: userEmail,
+                kssj: startTime.toISOString(),
+                jssj: endTime.toISOString(),
+                mszxm: intervieweeName,
+                zt: status  // 使用计算后的状态
+            };
+
+            console.log('发送的请求体:', requestBody);
+
             const response = await fetch(API_ENDPOINTS.empTaskInsert, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ygyxh: userEmail,
-                    mszyxh: intervieweeEmail, // 改为邮箱
-                    kssj: startTime.toISOString(),
-                    jssj: endTime.toISOString()
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const result = await response.json();
+            console.log('接口响应:', result);
+
             if (response.ok && result.success) {
                 toast.success('面试创建成功');
                 setShowCreateModal(false);
-                setIntervieweeEmail(''); // 清空输入框
+                setIntervieweeEmail('');
+                setIntervieweeName('');
                 fetchInterviews();
             } else {
                 toast.error(result.msg || '创建面试失败');
             }
         } catch (error) {
+            console.error('创建面试错误:', error);
             toast.error('网络错误，请稍后重试');
         }
     };
@@ -144,23 +228,27 @@ const InterviewerHome = () => {
         navigate(`/interviewer/content?roomId=${interview.roomId}`);
     };
 
-    const handleDeleteInterview = async (intervieweeEmail) => {
+    const handleDeleteInterview = async (interviewId) => {
         try {
+            // 使用 URLSearchParams 来构建 x-www-form-urlencoded 格式的数据
+            const formData = new URLSearchParams();
+            formData.append('msjlh', interviewId);
+
             const response = await fetch(API_ENDPOINTS.empTaskDelete, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify({
-                    ygyxh: userEmail,
-                    mszyxh: intervieweeEmail // 改为邮箱
-                }),
+                body: formData.toString() // 使用 URLSearchParams 的字符串形式
             });
 
             const result = await response.json();
             if (response.ok && result.success) {
                 toast.success('删除成功');
-                fetchInterviews();
+                //fetchInterviews();
+                setInterviews(prevInterviews => 
+                prevInterviews.filter(interview => interview.id !== interviewId)
+            );
             } else {
                 toast.error(result.msg || '删除失败');
             }
@@ -170,18 +258,29 @@ const InterviewerHome = () => {
     };
 
     const handleStartTimeChange = (date) => {
-    setStartTime(date);
-    // 如果新开始时间晚于当前结束时间，则自动调整结束时间（例如 +1 小时）
-    if (date >= endTime) {
-        const newEndTime = new Date(date);
-        newEndTime.setHours(newEndTime.getHours() + 1);
-        setEndTime(newEndTime);
-    }
+        setStartTime(date);
+        if (date >= endTime) {
+            const newEndTime = new Date(date);
+            newEndTime.setHours(newEndTime.getHours() + 1);
+            setEndTime(newEndTime);
+        }
+    };
+
+    // 关闭模态框时重置表单
+    const handleCloseModal = () => {
+        setShowCreateModal(false);
+        setIntervieweeEmail('');
+        setIntervieweeName('');
     };
 
     return (
         <div className="interviewer-home">
-            <ToastContainer position="top-center" autoClose={3000} />
+            <ToastContainer 
+                position="top-center" 
+                autoClose={2000} 
+                hideProgressBar={true}//隐藏进度条
+                pauseOnHover={false}//鼠标悬停不暂停
+            />
             
             <header className="homepage-header">
                 <h1>基于眼动分析的防大语言模型作弊的面试系统</h1>
@@ -207,11 +306,11 @@ const InterviewerHome = () => {
                 </div>
 
                 <div className="interview-list">
-                    <h2>面试任务列表</h2>
+                    <h2>我创建的面试任务</h2>
                     {loading ? (
                         <div className="loading">加载中...</div>
                     ) : interviews.length === 0 ? (
-                        <div className="no-data">暂无面试任务</div>
+                        <div className="no-data">暂无创建的面试任务</div>
                     ) : (
                         <table>
                             <thead>
@@ -238,15 +337,21 @@ const InterviewerHome = () => {
                                         </td>
                                         <td>
                                             <button 
+                                                className="view-btn"
+                                                onClick={() => handleViewInterviewee(interview.intervieweeEmail)}
+                                            >
+                                                查看
+                                            </button>
+                                            <button 
                                                 className="enter-btn"
                                                 onClick={() => handleEnterRoom(interview)}
-                                                disabled={interview.status !== '进行中'}
+                                                disabled={interview.status !== '进行中' || new Date() < new Date(interview.startTime) || new Date() > new Date(interview.endTime)}
                                             >
                                                 进入
                                             </button>
                                             <button 
                                                 className="delete-btn"
-                                                onClick={() => handleDeleteInterview(interview.intervieweeEmail)}
+                                                onClick={() => handleDeleteInterview(interview.id)}
                                             >
                                                 删除
                                             </button>
@@ -259,12 +364,76 @@ const InterviewerHome = () => {
                 </div>
             </main>
 
-             {showCreateModal && (
+            {/* 查看面试者信息模态框 */}
+            {showViewModal && (
+                <div className="modal-overlay">
+                    <div className="view-modal">
+                        <h3>面试者信息</h3>
+                        <div className="info-container">
+                            <div className="info-row">
+                                <span className="info-label">姓名:</span>
+                                <span className="info-value">{intervieweeInfo.name}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">性别:</span>
+                                <span className="info-value">{intervieweeInfo.gender}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">年龄:</span>
+                                <span className="info-value">{intervieweeInfo.age}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">手机号:</span>
+                                <span className="info-value">{intervieweeInfo.mszsjh}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">邮箱:</span>
+                                <span className="info-value">{intervieweeInfo.mszyxh}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">学校:</span>
+                                <span className="info-value">{intervieweeInfo.uni}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">专业:</span>
+                                <span className="info-value">{intervieweeInfo.major}</span>
+                            </div>
+                            <div className="info-row">
+                                <span className="info-label">自我介绍:</span>
+                                <p className="info-text">{intervieweeInfo.intv}</p>
+                            </div>
+                        </div>
+                        <div className="modal-buttons">
+                            <button 
+                                className="close-btn" 
+                                onClick={() => setShowViewModal(false)}
+                            >
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 创建面试模态框 - 已更新 */}
+            {showCreateModal && (
                 <div className="modal-overlay">
                     <div className="create-modal">
                         <h3>创建新面试</h3>
+                        
+                        {/* 新增：面试者姓名字段 */}
                         <div className="form-group">
-                            <label>面试者邮箱</label>
+                            <label>面试者姓名 *</label>
+                            <input
+                                type="text"
+                                value={intervieweeName}
+                                onChange={(e) => setIntervieweeName(e.target.value)}
+                                placeholder="请输入面试者姓名"
+                            />
+                        </div>
+                        
+                        <div className="form-group">
+                            <label>面试者邮箱 *</label>
                             <input
                                 type="email"
                                 value={intervieweeEmail}
@@ -273,44 +442,37 @@ const InterviewerHome = () => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>开始时间</label>
-                            <div className="datetime-picker-container">
-                                <DatePicker
-                                    selected={startTime}
-                                    onChange={handleStartTimeChange} // 替换原来的 setStartTime
-                                    showTimeSelect
-                                    timeFormat="HH:mm"
-                                    timeIntervals={15}
-                                    dateFormat="yyyy-MM-dd HH:mm"
-                                    minDate={new Date()}
-                                    className="datepicker-input"
-                                />
-                            </div>
+                            <label>开始时间 *</label>
+                            <DatePicker
+                                selected={startTime}
+                                onChange={handleStartTimeChange}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="yyyy-MM-dd HH:mm"
+                                minDate={new Date()}
+                                className="datepicker-input"
+                            />
                         </div>
                         <div className="form-group">
-                            <label>结束时间</label>
-                            <div className="datetime-picker-container">
-                               <DatePicker
-                                    selected={endTime} // 改为 endTime
-                                    onChange={setEndTime} // 改为 setEndTime
-                                    showTimeSelect
-                                    timeFormat="HH:mm"
-                                    timeIntervals={15}
-                                    dateFormat="yyyy-MM-dd HH:mm"
-                                    minDate={startTime} // 确保结束时间不早于开始时间
-                                    className="datepicker-input"
-                                />
-                            </div>
+                            <label>结束时间 *</label>
+                            <DatePicker
+                                selected={endTime}
+                                onChange={setEndTime}
+                                showTimeSelect
+                                timeFormat="HH:mm"
+                                timeIntervals={15}
+                                dateFormat="yyyy-MM-dd HH:mm"
+                                minDate={startTime}
+                                className="datepicker-input"
+                            />
                         </div>
                         <div className="modal-buttons">
-                            <button className="cancel-btn" onClick={() => {
-                                setShowCreateModal(false);
-                                setIntervieweeEmail('');
-                            }}>
+                            <button className="cancel-btn" onClick={handleCloseModal}>
                                 取消
                             </button>
                             <button className="confirm-btn" onClick={handleCreateInterview}>
-                                确认
+                                确认创建
                             </button>
                         </div>
                     </div>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { API_ENDPOINTS } from '../api';
-import '../styles/InterviewerProfile.css'; // 新建单独的样式文件
+import '../styles/InterviewerProfile.css';
 import RoleSwitcher from '../components/RoleSwitcher';
 
 const InterviewerProfile = () => {
@@ -37,10 +37,29 @@ const InterviewerProfile = () => {
                 throw new Error(result.msg);
             }
 
-            setUserInfo(result.data);
+            // 根据返回的数据结构调整
+            if (result.data && result.data.length > 0) {
+                const userData = result.data[0]; // 取数组第一项
+                setUserInfo({
+                    ygsjh: userData.ygsjh || '',
+                    ygyxh: userData.ygyxh || userEmail, // 优先使用返回的邮箱，否则用本地存储的
+                    name: userData.name || '',
+                    gsmc: userData.gsmc || '',
+                    gsdz: userData.gsdz || ''
+                });
+            }
         } catch (error) {
             console.error('获取用户信息失败:', error);
             toast.error(`获取用户信息失败: ${error.message}`);
+            
+            // 使用默认值
+            setUserInfo({
+                ygsjh: '',
+                ygyxh: userEmail,
+                name: '',
+                gsmc: '',
+                gsdz: ''
+            });
         } finally {
             setLoading(false);
         }
@@ -53,7 +72,13 @@ const InterviewerProfile = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(userInfo),
+                body: JSON.stringify({
+                    ygyxh: userInfo.ygyxh,
+                    ygsjh: userInfo.ygsjh,
+                    name: userInfo.name,
+                    gsmc: userInfo.gsmc,
+                    gsdz: userInfo.gsdz
+                }),
             });
 
             const result = await response.json();
@@ -77,7 +102,12 @@ const InterviewerProfile = () => {
 
     return (
         <div className="interviewer-home">
-            <ToastContainer position="top-center" autoClose={3000} />
+            <ToastContainer 
+                position="top-center" 
+                autoClose={2000} 
+                hideProgressBar={true}//隐藏进度条
+                pauseOnHover={false}//鼠标悬停不暂停
+            />
             
             <header className="homepage-header">
                 <h1>基于眼动分析的防大语言模型作弊的面试系统</h1>
@@ -101,12 +131,24 @@ const InterviewerProfile = () => {
                         <div className="form-section">
                             <div className="form-row">
                                 <div className="form-group">
+                                    <label>邮箱</label>
+                                    <input 
+                                        type="email" 
+                                        name="ygyxh" 
+                                        value={userInfo.ygyxh} 
+                                        readOnly
+                                    />
+                                </div>
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
                                     <label>手机号</label>
                                     <input 
                                         type="tel" 
                                         name="ygsjh" 
                                         value={userInfo.ygsjh} 
                                         onChange={handleInputChange}
+                                        placeholder="请输入手机号"
                                     />
                                 </div>
                             </div>
@@ -118,6 +160,7 @@ const InterviewerProfile = () => {
                                         name="name" 
                                         value={userInfo.name} 
                                         onChange={handleInputChange}
+                                        placeholder="请输入姓名"
                                     />
                                 </div>
                             </div>
@@ -129,6 +172,7 @@ const InterviewerProfile = () => {
                                         name="gsmc" 
                                         value={userInfo.gsmc} 
                                         onChange={handleInputChange}
+                                        placeholder="请输入公司名称"
                                     />
                                 </div>
                             </div>
@@ -140,6 +184,7 @@ const InterviewerProfile = () => {
                                         name="gsdz" 
                                         value={userInfo.gsdz} 
                                         onChange={handleInputChange}
+                                        placeholder="请输入公司地址"
                                     />
                                 </div>
                             </div>

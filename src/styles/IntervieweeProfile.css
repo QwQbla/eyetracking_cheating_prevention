@@ -1,0 +1,25 @@
+/* InterviewerProfile.css */
+/*性别选择、文本输入*/
+
+.form-group select {
+    width: 100%;
+  padding: 5px 15px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+/* 新增的文本域样式 */
+.form-group textarea {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}

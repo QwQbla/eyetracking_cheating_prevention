@@ -8,7 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
-    const [code, setCode] = useState('');
+    const [captcha, setCaptcha] = useState('');
     const [message, setMessage] = useState('');
     const [isSendingCode, setIsSendingCode] = useState(false);
     const navigate = useNavigate();
@@ -48,7 +48,7 @@ const LoginPage = () => {
     };
 
     const handleLogin = async () => {
-        if (!email || !code) {
+        if (!email || !captcha) {
             setMessage(!email ? '邮箱不能为空' : '验证码不能为空');
             return;
         }
@@ -59,7 +59,7 @@ const LoginPage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, code }),
+                body: JSON.stringify({ email, captcha }),
             });
 
             const result = await response.json();
@@ -85,7 +85,7 @@ const LoginPage = () => {
         <div className="login-container" id="loginPage">
             <ToastContainer
                 position="top-center"
-                autoClose={3000}
+                autoClose={1000}
                 hideProgressBar
                 newestOnTop={false}
                 closeOnClick
@@ -93,6 +93,7 @@ const LoginPage = () => {
                 pauseOnFocusLoss
                 draggable
                 pauseOnHover
+                theme="light"
             />
             <div className="login-form">
                 <h2 className="login-title">基于眼动分析的防大语言模型作弊的面试系统</h2>
@@ -113,11 +114,11 @@ const LoginPage = () => {
                     <div className="code-input-group">
                         <input
                             type="text"
-                            id="code"
+                            id="captcha"
                             placeholder="请输入验证码"
-                            value={code}
+                            value={captcha}
                             onChange={(e) => {
-                                setCode(e.target.value);
+                                setCaptcha(e.target.value);
                                 setMessage(''); // 输入时清除错误消息
                             }}
                         />
