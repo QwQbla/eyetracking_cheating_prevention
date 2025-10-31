@@ -135,7 +135,7 @@ const InterviewerHome = () => {
         const interval = setInterval(() => {
             setInterviews(prev => prev.map(item => ({
                 ...item,
-                status: item.zt
+                status: item.status
             })));
         }, 60000);
 

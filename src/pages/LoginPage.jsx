@@ -11,7 +11,21 @@ const LoginPage = () => {
     const [captcha, setCaptcha] = useState('');
     const [message, setMessage] = useState('');
     const [isSendingCode, setIsSendingCode] = useState(false);
+    const [userType, setUserType] = useState('interviewer');
     const navigate = useNavigate();
+
+    // 根据用户类型获取对应的接口
+    const getCurrentEndpoints = () => {
+        return userType === 'interviewer' 
+            ? { 
+                login: API_ENDPOINTS.itvlogin, 
+                sendCode: API_ENDPOINTS.itvsendCode 
+              }
+            : { 
+                login: API_ENDPOINTS.emplogin, 
+                sendCode: API_ENDPOINTS.empsendCode 
+              };
+    };
 
     const handleSendCode = async () => {
         if (!email) {
@@ -26,7 +40,8 @@ const LoginPage = () => {
         try {
             setIsSendingCode(true);
             setMessage(''); // 清除之前的错误消息
-            const response = await fetch(`${API_ENDPOINTS.sendCode}`, {
+            const endpoints = getCurrentEndpoints();
+            const response = await fetch(`${endpoints.sendCode}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,7 +69,8 @@ const LoginPage = () => {
         }
 
         try {
-            const response = await fetch(API_ENDPOINTS.login, {
+            const endpoints = getCurrentEndpoints();
+            const response = await fetch(endpoints.login, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -65,9 +81,14 @@ const LoginPage = () => {
             const result = await response.json();
             if (response.ok) {
                 toast.success('登录成功');
-                localStorage.setItem('email',email)
+                localStorage.setItem('email',email);
+                localStorage.setItem('userType', userType);
                 setTimeout(() => {
-                    navigate('/interviewer/home');
+                    if (userType === 'interviewer') {
+                        navigate('/interviewer/home');
+                    } else {
+                        navigate('/interviewee/home'); 
+                    }
                 }, 1000); 
             } else {
                 toast.error(result.msg || '登录失败，请重试');
@@ -79,6 +100,12 @@ const LoginPage = () => {
 
     const isValidEmail = (email) => {
         return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email);
+    };
+
+    // 处理用户类型变化
+    const handleUserTypeChange = (e) => {
+        setUserType(e.target.value);
+        setMessage(''); // 清除错误消息
     };
 
     return (
@@ -108,6 +135,13 @@ const LoginPage = () => {
                             setMessage(''); // 输入时清除错误消息
                         }}
                     />
+                </div>
+                <div className="input-group">
+                    <label htmlFor="userType">用户类型：</label>
+                    <select id="userType" value={userType} onChange={handleUserTypeChange} className='user-type-select'>
+                        <option value="interviewer">面试者</option>
+                        <option value="interviewee">面试官</option>
+                    </select>
                 </div>
                 {message && <div className="message-container">{message}</div>}
                 <div className="input-group">
