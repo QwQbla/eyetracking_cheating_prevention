@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-
+import { API_ENDPOINTS } from '../api';
 // 核心库
 import { io } from 'socket.io-client';
 import webgazer from 'webgazer';
@@ -303,10 +303,14 @@ const IntervieweeContent = () => {
                 try {
                     // 在真实应用中，这里应替换为真实的 API 端点
                     // 确保 URL 正确地引用了 roomId
-                    const response = await fetch(`/api/interviews/${roomId}/gaze-data`, {
+                    const response = await fetch(`${API_ENDPOINTS.gazeData}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ gazeData: dataToSend })
+                        body:JSON.stringify({
+                            fjh: roomId, // 房间号 (fjh)
+                            time: new Date().toISOString(),
+                            zuobiao: dataToSend 
+                        })
                     });
 
                     if (!response.ok) {
@@ -314,7 +318,7 @@ const IntervieweeContent = () => {
                     } else {
                         const result = await response.json();
                         console.log('后端状态:', result.status);
-                        if (result.status === "ENDED") {
+                        if (result.zt === "已完成" || result.zt === "已过期") {
                             handleInterviewEnd(); // 触发面试结束
                         }
                     }

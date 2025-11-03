@@ -20,7 +20,9 @@ export const API_ENDPOINTS = {
     empAlert: `${BASE_URL}/emp/AlertById`,
     //面试者个人信息
     itvQuery: `${BASE_URL}/itv/QueryById`,
-    itvAlert: `${BASE_URL}/itv/AlertById`
+    itvAlert: `${BASE_URL}/itv/AlertById`,
+    //眼动数据接口
+    gazeData:`${BASE_URL}/static-json/save`
 };
 
 // 用户类型枚举
