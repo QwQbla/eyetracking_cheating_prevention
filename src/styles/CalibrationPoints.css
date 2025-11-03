@@ -1,0 +1,67 @@
+/* src/styles/CalibrationPoints.css */
+/* 最简单且灵活的校准点布局方式：绝对定位 */
+.calibrationDiv {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 30; /* 确保校准点在最上层，可点击 */
+  /* background-color: rgba(0,0,255,0.1); /* 调试用背景色 */
+  pointer-events: auto; /* 默认允许点击穿透，只在按钮上响应 */
+}
+
+.Calibration {
+  width: 50px; /* 按钮尺寸 */
+  height: 50px;
+  border-radius: 50%; /* 圆形 */
+  /*background-color: blue; /* 默认蓝色 */
+  opacity: 0.2; /* 默认透明度 */
+  border: 2px solid white; /* 白色边框 */
+  cursor: pointer; /* 鼠标悬停显示手型 */
+  transition: background-color 0.1s, opacity 0.1s; /* 平滑过渡效果 */
+  pointer-events: all; /* 使按钮自身可以点击 */
+
+  /* 绝对定位，实现 3x3 网格布局 */
+  position: absolute;
+  transform: translate(-50%, -50%); /* 使定位点在按钮中心 */
+}
+
+.Calibration:hover:not(:disabled) {
+  background-color: rgba(17, 80, 238, 0.651); 
+  opacity: 0.6;
+}
+
+.Calibration:disabled {
+  cursor: not-allowed; /* 禁用时显示禁止符号 */
+  border-color: gray;
+}
+
+/* --- 上边一行 --- */
+#Pt1 { top: 15%; left: 10%; }
+#Pt2 { top: 15%; left: 50%; }
+#Pt3 { top: 15%; left: 90%; }
+
+/* --- 中间一行 --- */
+#Pt4 { top: 50%; left: 10%; }
+#Pt5 { top: 50%; left: 50%; } /* Pt5 初始会在 JS 中设置为 display: none; */
+#Pt6 { top: 50%; left: 90%; }
+
+/* --- 下边一行 --- */
+#Pt7 { top: 92%; left: 10%; }
+#Pt8 { top: 92%; left: 50%; }
+#Pt9 { top: 92%; left: 90%; }
+
+
+.accuracy-point {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 25px; 
+  height: 25px;
+  background-color: rgb(228, 67, 67); 
+  border: 2px solid white;
+  border-radius: 50%;
+  z-index: 9999; 
+}

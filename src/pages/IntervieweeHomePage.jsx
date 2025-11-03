@@ -87,7 +87,7 @@ const IntervieweeHomePage = () => {
             return;
         }
 
-        navigate(`/interviewee/content?roomId=${interview.roomId}`);
+        navigate(`/calibration/${interview.roomId}`);
     };
 
     useEffect(() => {

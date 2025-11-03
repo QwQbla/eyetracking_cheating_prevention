@@ -1,0 +1,283 @@
+/* src/styles/CameraCalibrationPage.css */
+
+/* --- 导航栏样式 --- */
+.navbar {
+  width: 100%;
+  background-color: #e9ecef;
+  padding: 10px 20px;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.navbar-content {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.navbar-item {
+  font-weight: bold;
+  color: #007bff;
+  font-size: 1.1em;
+}
+
+.navbar-button {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.3s ease;
+}
+
+.navbar-button:hover {
+  background-color: #0056b3;
+}
+
+.navbar-button.help-button {
+  background-color: #6c757d;
+}
+
+.navbar-button.help-button:hover {
+  background-color: #5a6268;
+}
+
+/* --- 状态文本 --- */
+.status-text {
+  font-size: 1.2em;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* --- WebGazer Canvas 样式 --- */
+.webgazer-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.8;
+}
+
+/* --- 校准点网格布局 --- */
+.calibration-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0;
+  z-index: 20;
+}
+
+.calibration-point {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  border: 3px solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: transparent;
+  cursor: pointer;
+  margin: auto;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.calibration-point.active {
+  background-color: #007bff;
+  border-color: #0056b3;
+  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(0,0,255,0.6);
+}
+
+.calibration-point.completed {
+  background-color: #28a745;
+  border-color: #218838;
+  color: white;
+  opacity: 0.7;
+  cursor: default;
+}
+
+.calibration-point:disabled {
+  background-color: #e9ecef;
+  border-color: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* --- 模态框样式 --- */
+.modal-content {
+  border: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 900px;
+  width: 100%;
+}
+
+.modal-content h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.modal-content p {
+  color: #666;
+  margin-bottom: 25px;
+}
+
+.btn-primary, .btn-secondary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  margin: 0 10px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+  background-color: blue;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: rgb(0, 0, 164);
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+#webgazerVideoContainer {
+  display: none !important;
+}
+
+/* loading-spinner 用于显示加载中的旋转动画 */
+.loading-container {
+   display: flex;
+   flex-direction: column;
+   justify-content: center; /* 垂直居中 */
+   align-items: center; /* 水平居中 */
+   height: 100%; /* 占满父容器（即全屏） */
+   text-align: center;
+  }
+  .loading-container h1 {
+    font-size: 2rem; /* 约 32px */
+    font-weight: 500;
+    color: #343a40; /* 深灰色 */
+    margin-bottom: 20px;
+  }
+  .loading-container p {
+    font-size: 1.1rem; /* 约 18px */
+    color: #6c757d; /* 柔和的灰色 */
+    margin-top: 20px;
+    max-width: 400px; /* 限制宽度，防止错误信息过长 */
+  }
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3; /* 浅灰色轨道 */
+  border-top: 4px solid #3498db; /* 主题蓝色旋转部分 */
+  border-radius: 50%;
+  animation: spin 1s linear infinite; /* 应用下面定义的 spin 动画 */
+  margin: 20px auto; /* 让它在 h1 和 p 标签之间自动水平居中 */
+}
+
+/* 定义旋转动画 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 共享首页标题样式 */
+.homepage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.homepage-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.user-center-btn, .logout-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+}
+
+.user-center-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.user-center-btn:hover {
+    background-color: #2980b9;
+}
+
+.logout-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.logout-btn:hover {
+    background-color: #c0392b;
+}

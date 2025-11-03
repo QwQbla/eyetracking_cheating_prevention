@@ -1,0 +1,33 @@
+/* HelpModal.css */
+
+.modal-90w {
+}
+
+.modal-body-scrollable {
+  max-height: 80vh; /* 设置最大高度 */
+  overflow-y: auto; /* 内容超出时显示垂直滚动条 */
+}
+
+/* 其他 .step-card 等样式保持不变 */
+.step-card {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.step-card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #343a40;
+}
+
+.step-card ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.step-card li {
+  margin-bottom: 0.5rem;
+}

@@ -225,7 +225,7 @@ const InterviewerHome = () => {
             return;
         }
 
-        navigate(`/interviewer/content?roomId=${interview.roomId}`);
+        navigate(`/interviewer/content/${interview.roomId}`);
     };
 
     const handleDeleteInterview = async (interviewId) => {

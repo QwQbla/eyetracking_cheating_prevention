@@ -1,0 +1,205 @@
+/* SharedLayout.module.css */
+.pageContainer {
+  display: flex;
+  height: 100vh; /* 占满整个视口高度 */
+  background-color: #f8f9fa; /* 浅灰色背景，增加层次感 */
+}
+
+/* 侧边栏 - 变得更窄，聚焦核心 */
+.sidebar {
+  width: 280px;
+  padding: 20px;
+  background-color: #ffffff;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto; /* 侧边栏本身允许滚动 */
+  flex-shrink: 0; /* 防止侧边栏被压缩 */
+}
+.sidebar h2, .sidebar h4 {
+  color: #343a40;       /* 设置颜色 */
+  flex-shrink: 0;      /* 关键：防止标题在垂直空间不足时被压缩 */
+}
+
+/* 主要工作区  */
+.mainWorkspace { /* 替换原来的 mainContent */
+  flex: 1; /* 占据剩余宽度 */
+  padding: 20px;
+  display: flex; /* 改为横向 Flex 布局 */
+  gap: 20px; /* 列之间的间距 */
+  overflow: hidden; /* 防止内部意外溢出 */
+}
+
+.questionColumn {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 30%; /* 问题列占据 40% 宽度，可调整 */
+  min-width: 300px; /* 最小宽度 */
+  overflow: hidden; /* 防止内部溢出 */
+}
+
+.codeResultColumn {
+  display: flex;
+  flex-direction: column; /* 内部卡片垂直堆叠 */
+  flex: 1; /* 占据剩余宽度 */
+  gap: 20px; /* 代码卡片和结果卡片之间的间距 */
+  overflow: hidden; /* 防止内部溢出 */
+}
+
+/* 卡片式容器 (用于包裹问题、代码、结果等区域) */
+.contentCard {
+  background-color: #ffffff;
+  border-radius: 8px; /* 圆角 */
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); /* 更柔和的阴影 */
+  display: flex;
+  flex-direction: column; /* 内部元素垂直排列 */
+  flex-shrink: 0;
+}
+
+/* 问题卡片 - 让其填满问题列的高度 */
+.questionColumn .contentCard {
+  flex-grow: 1;
+}
+
+.contentCard h2, .contentCard h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #343a40; /* 深灰色标题 */
+  border-bottom: 1px solid #e9ecef; /* 分割线 */
+  padding-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.videoPlayer {
+  width: 100%; /* 宽度自适应侧边栏 */
+  height: auto; /* 高度自动 */
+  aspect-ratio: 4 / 3; /* 保持4:3比例 */
+  max-height: 180px; /* 限制最大高度 */
+  border: 1px solid #dee2e6; /* 浅边框 */
+  background-color: #000;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.questionEditor {
+  width: 100%;
+  flex-grow: 1; /* 填满卡片剩余空间 */
+  padding: 12px;
+  box-sizing: border-box;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none; /* 禁止用户调整大小 */
+  overflow-y: auto; /* 内容超出时滚动 */
+}
+
+.codeCard {
+  flex-grow: 7; /* 占 7 份 */
+  flex-basis: 0;
+  min-height: 200px; /* 设定一个最小高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+.resultCard {
+  flex-grow: 3;    /* 占 3 份 */
+  flex-basis: 0;
+  min-height: 100px; 
+  display: flex; 
+}
+
+.resultBox {
+  flex-grow: 1; 
+  flex-basis: 0;
+  background: #282c34;
+  color: #abb2bf;
+  padding: 15px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto; /* 内容超出时滚动 */
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+}
+
+/* 基础按钮 */
+.button {
+  padding: 10px 15px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid #ced4da; /* 柔和边框色 */
+  border-radius: 6px; 
+  background-color: #ffffff; /* 默认白色背景 */
+  color: #495057; /* 默认文字颜色 */
+  transition: all 0.2s ease-in-out; /* 平滑过渡 */
+  text-align: center;
+  width: 100%; /* 侧边栏按钮占满宽度 */
+  margin-bottom: 10px; /* 按钮间距 */
+}
+
+.button:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.button:active {
+  background-color: #e9ecef;
+}
+
+/* Specific button for starting the call */
+.callButton {
+  composes: button;
+  width: 100%;
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.callButton:hover {
+  background-color: #218838;
+}
+
+/* 运行代码按钮 */
+.runButton {
+  margin-top: 15px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.gazeDot {
+  width: 20px;
+  height: 20px;
+  background-color: rgba(255, 0, 0, 0.5); /* 半透明红色 */
+  border-radius: 50%;
+  position: absolute; /* 确保 style 中的 left/top 生效 */
+  z-index: 1000; /* 确保它在最上层 */
+  transition: left 0.05s linear, top 0.05s linear; /* 让移动更平滑 */
+  pointer-events: none; /* 确保它不会捕获鼠标事件，不影响用户操作 */
+  transform: translate(-50%, -50%); /* 让点的中心对准坐标 */
+  will-change: left, top; /* 性能优化，告诉浏览器这两个属性会频繁变化 */
+}
+
+.statusPanel li.info {
+  color: #00529B; /* 蓝色 */
+}
+.statusPanel li.success {
+  color: #28a745; /* 绿色 */
+}
+.statusPanel li.error {
+  color: #dc3545; /* 红色 */
+}
+.statusPanel li.system {
+  color: #6c757d; /* 灰色 */
+  font-style: italic;
+}
+
+.statusPanel {
+  /* ... */
+  min-width: 100px;
+  max-height: 100px; /* 关键：限制最大高度 */
+  overflow-y: auto;  /* 关键：当内容超出时，自动显示垂直滚动条 */
+}

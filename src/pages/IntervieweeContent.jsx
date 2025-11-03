@@ -1,46 +1,422 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import RoleSwitcher from '../components/RoleSwitcher';
+// eyetracking_cheating_prevention/src/pages/IntervieweeContent.jsx
+
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+// 核心库
+import { io } from 'socket.io-client';
+import webgazer from 'webgazer';
+import swal from 'sweetalert';
+
+// 相关组件与钩子 (Hooks)
+import SharedCodeEditor from '../components/SharedCodeEditor';
+import { useWebgazer } from '../hooks/useWebgazer';
+
+// 样式
+import styles from '../styles/SharedLayout.module.css';
 import '../styles/IntervieweeContent.css';
 
-const IntervieweeContent = () => {
-    const navigate = useNavigate();
-    const userEmail = localStorage.getItem('email') || '';
+const configuration = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+};
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('email');
-        localStorage.removeItem('userRole');
-        navigate('/');
+/**
+ * 应聘者面试内容页面
+ * 整合了 WebRTC 视频、Socket.IO 信令、DataChannel 数据、Webgazer 眼动追踪、以及后端心跳上报功能。
+ */
+const IntervieweeContent = () => {
+
+    // --- 核心 Hooks ---
+    const navigate = useNavigate();
+    const { roomId } = useParams(); // 从 URL 获取动态房间 ID
+    const { stream, shutdownWebgazer } = useWebgazer(); // 从 Context 获取共享视频流
+
+    // --- 状态 (State) ---
+    // 从 sessionStorage 恢复代码，否则使用默认值
+    const [code, setCode] = useState(() => {
+        const savedCode = sessionStorage.getItem(`interview_code_${roomId}`);
+        return savedCode !== null ? savedCode : '// 在此输入代码...';
+    });
+    // 从 sessionStorage 恢复问题
+    const [question, setQuestion] = useState(() => {
+        const savedQuestion = sessionStorage.getItem(`interview_question_${roomId}`);
+        return savedQuestion !== null ? savedQuestion : '请等待面试官发布题目...';
+    });
+    const [executionResult, setExecutionResult] = useState(''); // 代码执行结果
+    const [statusLog, setStatusLog] = useState([{ // 面试状态日志
+        id: Date.now(),
+        type: 'system',
+        message: '正在等待面试官进入房间...'
+    }]);
+    const [isInterviewOver, setIsInterviewOver] = useState(false); // 标记面试是否已由后端结束
+
+    // --- 引用 ---
+    // DOM 引用
+    const localVideoRef = useRef(null);
+    const remoteVideoRef = useRef(null);
+    const statusPanelRef = useRef(null); // 状态面板 (用于自动滚动)
+    // 实例与连接引用
+    const pcRef = useRef(null); // WebRTC PeerConnection
+    const socketRef = useRef(null); // Socket.IO
+    const dataChannelRef = useRef(null); // WebRTC DataChannel
+    const workerRef = useRef(null); // 代码执行 Worker
+    // 数据与定时器引用
+    const candidateQueueRef = useRef([]); // ICE 候选队列
+    const gazeDataBuffer = useRef([]); // 眼动数据缓冲区 (用于5秒上报)
+    const intervalIdRef = useRef(null); // 心跳/上报定时器 ID
+
+    // --- 核心功能函数 ---
+
+    /**
+     * 最终清理函数
+     * 负责停止所有正在运行的进程、关闭连接、清除定时器并导航
+     */
+    const performCleanupAndNavigate = useCallback(() => {
+        console.log("正在清理资源并返回主页面...");
+        
+        // 1. 停止数据上传定时器
+        if (intervalIdRef.current) {
+            clearInterval(intervalIdRef.current);
+            intervalIdRef.current = null;
+        }
+        // 2. 清理 Webgazer
+        shutdownWebgazer(); // 关闭摄像头和 Webgazer 实例
+        webgazer.clearGazeListener(); // 移除眼动监听
+        
+        // 3. 清理 WebRTC
+        if (pcRef.current) pcRef.current.close();
+        if (dataChannelRef.current) dataChannelRef.current.close();
+        
+        // 4. 清理 Socket.IO
+        if (socketRef.current) socketRef.current.disconnect();
+        
+        // 5. 清理 Worker
+        if (workerRef.current) workerRef.current.terminate();
+        
+        // 6. 清理 sessionStorage
+        sessionStorage.removeItem(`interview_code_${roomId}`);
+        sessionStorage.removeItem(`interview_question_${roomId}`);
+        
+        // 7. 导航回主页
+        navigate('/interviewee/home');
+    }, [navigate, roomId, shutdownWebgazer]);
+
+    /**
+     * 处理由后端触发的面试时间结束事件
+     */
+    const handleInterviewEnd = useCallback(() => {
+        if (isInterviewOver) return; // 防止重复触发
+        setIsInterviewOver(true);
+
+        // 立即停止数据上传定时器
+        if (intervalIdRef.current) {
+            clearInterval(intervalIdRef.current);
+            intervalIdRef.current = null;
+        }
+
+        // 显示弹窗
+        swal({
+            title: "面试已结束",
+            text: "本次面试时间已到。",
+            icon: "info",
+            button: "确定",
+            closeOnClickOutside: false,
+            closeOnEsc: false,
+        }).then(() => {
+            // 点击确定后清理并导航
+            performCleanupAndNavigate();
+        });
+    }, [isInterviewOver, performCleanupAndNavigate]); // 依赖清理函数
+
+    // --- 副作用钩子 (Effects) ---
+
+    // Effect 1: 初始化代码执行 Worker
+    useEffect(() => {
+        workerRef.current = new Worker('/coderunner.js');
+        workerRef.current.onmessage = (event) => {
+            const resultString = JSON.stringify(event.data, null, 2);
+            if (socketRef.current) {
+                socketRef.current.emit('code-result', event.data);
+            }
+            setExecutionResult(resultString);
+        };
+        return () => {
+            if (workerRef.current) workerRef.current.terminate();
+        };
+    }, []); // 空依赖，仅运行一次
+
+    // Effect 2: 核心连接 (Webgazer, Socket.IO, WebRTC)
+    useEffect(() => {
+        if (!stream) {
+            console.log("等待共享视频流...");
+            return;
+        }
+
+        // 2a. 启动 Webgazer 监听 (眼动数据 P2P 发送 + 后端缓冲)
+        webgazer.setGazeListener((data, _elapsedTime) => { // 修正: _elapsedTime
+            if (data == null) return;
+
+            // 2a-1. 推入缓冲区，用于后端5秒上报
+            gazeDataBuffer.current.push({
+                x: data.x,
+                y: data.y,
+                timestamp: Date.now()
+            });
+
+            // 2a-2. 通过 P2P DataChannel 实时发送给面试官
+            if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+                const dataToSend = { type: 'gaze', content: { x: data.x, y: data.y } };
+                dataChannelRef.current.send(JSON.stringify(dataToSend));
+            }
+        });
+
+        // 2b. 初始化 Socket.IO 连接
+        const socket = io('http://localhost:8080');
+        socketRef.current = socket;
+
+        // 2c. Socket.IO 事件监听
+        socket.on('connect', () => {
+            console.log('面试者：信令服务器已连接', socket.id);
+            socket.emit('join-room', roomId);
+
+            const myStatus = {
+                id: Date.now(),
+                type: 'success',
+                message: '应聘者已进入房间'
+            };
+            socket.emit('status-update', myStatus);
+            setStatusLog(prevLog => [...prevLog, myStatus]);
+        });
+
+        socket.on('status-update', (data) => {
+            console.log('收到状态更新:', data.message);
+            setStatusLog(prevLog => [...prevLog, { ...data, id: Date.now() }]);
+        });
+
+        // 2d. WebRTC 核心逻辑
+        socket.on('offer', async (offerSdp) => {
+            console.log('面试者：收到 Offer');
+            const pc = new RTCPeerConnection(configuration);
+            pcRef.current = pc;
+
+            // 接收 DataChannel
+            pc.ondatachannel = (event) => {
+                const dataChannel = event.channel;
+                dataChannelRef.current = dataChannel;
+                dataChannel.onopen = () => console.log("应聘者：数据通道已开启!");
+                dataChannel.onclose = () => console.log("应聘者：数据通道已关闭。");
+                dataChannel.onmessage = (event) => {
+                    console.log("收到面试官通过DataChannel发来的消息:", event.data);
+                };
+            };
+
+            // ICE 候选
+            pc.onicecandidate = (event) => {
+                if (event.candidate && socketRef.current) {
+                    socketRef.current.emit('ice-candidate', event.candidate);
+                }
+            };
+
+            // 接收远程媒体流
+            pc.ontrack = (event) => {
+                if (remoteVideoRef.current && event.streams[0]) {
+                    remoteVideoRef.current.srcObject = event.streams[0];
+                }
+            };
+
+            // 添加本地媒体流
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+            }
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+            // Offer/Answer 协商
+            await pc.setRemoteDescription(new RTCSessionDescription(offerSdp));
+
+            while (candidateQueueRef.current.length > 0) {
+                const candidate = candidateQueueRef.current.shift();
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            
+            if (socketRef.current) {
+                socketRef.current.emit('answer', pc.localDescription);
+            }
+        });
+
+        socket.on('ice-candidate', async (candidate) => {
+            if (pcRef.current && pcRef.current.remoteDescription) {
+                await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+            } else {
+                candidateQueueRef.current.push(candidate);
+            }
+        });
+
+        // 2e. 应用数据同步 (Socket.IO)
+        socket.on('code-update', (newCode) => {
+            setCode(newCode);
+            sessionStorage.setItem(`interview_code_${roomId}`, newCode);
+        });
+
+        socket.on('code-result', (result) => {
+            setExecutionResult(JSON.stringify(result, null, 2));
+        });
+
+        socket.on('question-update', (receivedQuestion) => {
+            setQuestion(receivedQuestion);
+            sessionStorage.setItem(`interview_question_${roomId}`, receivedQuestion);
+        });
+
+        // 2f. 清理函数
+        return () => {
+            webgazer.clearGazeListener();
+            if (pcRef.current) {
+                pcRef.current.close();
+                pcRef.current = null;
+            }
+            if (socket) socket.disconnect();
+            socketRef.current = null; // 清理 ref
+        };
+    }, [stream, roomId]); // 依赖 stream 和 roomId
+
+    // Effect 3: 状态面板自动滚动
+    useEffect(() => {
+        if (statusPanelRef.current) {
+            statusPanelRef.current.scrollTop = statusPanelRef.current.scrollHeight;
+        }
+    }, [statusLog]); // 依赖 statusLog
+
+    // Effect 4: 定时上报眼动数据 (心跳)
+    useEffect(() => {
+        // 将 intervalId 存入 ref
+        intervalIdRef.current = setInterval(async () => {
+            if (isInterviewOver) return; // 如果面试已结束，则停止上报
+
+            if (gazeDataBuffer.current.length > 0) {
+                const dataToSend = [...gazeDataBuffer.current];
+                gazeDataBuffer.current = [];
+
+                console.log(`打包 ${dataToSend.length} 条眼动数据并发送给后端...`);
+
+                try {
+                    // 在真实应用中，这里应替换为真实的 API 端点
+                    // 确保 URL 正确地引用了 roomId
+                    const response = await fetch(`/api/interviews/${roomId}/gaze-data`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ gazeData: dataToSend })
+                    });
+
+                    if (!response.ok) {
+                        console.error('发送眼动数据失败:', response.statusText);
+                    } else {
+                        const result = await response.json();
+                        console.log('后端状态:', result.status);
+                        if (result.status === "ENDED") {
+                            handleInterviewEnd(); // 触发面试结束
+                        }
+                    }
+                } catch (error) {
+                    console.error('网络错误，发送眼动数据失败:', error);
+                }
+            }
+        }, 5000); // 每 5 秒执行一次
+
+        // 清理定时器
+        return () => {
+            if (intervalIdRef.current) {
+                clearInterval(intervalIdRef.current);
+            }
+        };
+    }, [roomId, handleInterviewEnd, isInterviewOver]); // 依赖
+
+    // --- 事件处理器 (Event Handlers) ---
+
+    // 用户主动离开
+    const handleReturnToMenu = () => {
+        performCleanupAndNavigate();
+    };
+
+    // 运行代码
+    const runCode = () => {
+        if (workerRef.current) {
+            setExecutionResult('正在执行代码...');
+            workerRef.current.postMessage({ code });
+        }
+    };
+    
+    // 代码编辑器内容改变
+    const handleCodeChange = (newCode) => {
+        setCode(newCode);
+        sessionStorage.setItem(`interview_code_${roomId}`, newCode);
+        if (socketRef.current) {
+            socketRef.current.emit('code-update', newCode);
+        }
     };
 
     return (
-        <div className="interview-content-page">
-            {/* 共享首页的标题样式 */}
-            <header className="homepage-header">
-                <h1>基于眼动分析的防大语言模型作弊的面试系统</h1>
-                <div className="header-buttons">
-                    <RoleSwitcher currentRole="interviewer" />
-                    <button className="user-center-btn" onClick={() => navigate('/interviewee/home')}>
-                        返回首页
-                    </button>
-                    <button className="logout-btn" onClick={handleLogout}>
-                        退出
-                    </button>
-                </div>
-            </header>
+        <div className={styles.pageContainer}>
+            {/* 侧边栏 */}
+            <div className={styles.sidebar}>
+                <h2>面试者端</h2>
+                <video ref={localVideoRef} autoPlay playsInline muted className={styles.videoPlayer} />
+                <video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />
 
-            {/* 基础内容区域 */}
-            <main className="content-main">
-                <div className="content-container">
-                    <h1 className="content-title">面试内容页面</h1>
-                    <p className="content-description">
-                        这里是面试内容页面的基础框架，具体功能正在开发中...
-                    </p>
+                <h4>面试状态</h4>
+                <div className={styles.statusPanel} ref={statusPanelRef}>
+                    <ul>
+                        {statusLog.map((logItem) => (
+                            <li key={logItem.id} className={styles[logItem.type]}>
+                                {logItem.message}
+                            </li>
+                        ))}
+                    </ul>
                 </div>
-            </main>
+
+                <button
+                    onClick={handleReturnToMenu}
+                    className={styles.button}
+                    style={{ width: '100%', marginBottom: '1rem' }}
+                >
+                    离开面试
+                </button>
+            </div>
+
+            {/* 主工作区 */}
+            <div className={styles.mainWorkspace}>
+                {/* 问题列 */}
+                <div className={styles.questionColumn}>
+                    <div className={styles.contentCard}>
+                        <h4>问题区</h4>
+                        <pre className={styles.questionEditor}>
+                            {question}
+                        </pre>
+                    </div>
+                </div>
+
+                {/* 代码与结果列 */}
+                <div className={styles.codeResultColumn}>
+                    {/* 代码卡片 */}
+                    <div className={`${styles.contentCard} ${styles.codeCard}`}>
+                        <h4>代码区</h4>
+                        <SharedCodeEditor code={code} onCodeChange={handleCodeChange} />
+                        {/* 修正: onClick 和 className 之间添加空格 */}
+                        <button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>
+                    </div>
+
+                    {/* 结果卡片 */}
+                    <div className={`${styles.contentCard} ${styles.resultCard}`}>
+                        <h4>执行结果</h4>
+                        <pre className={styles.resultBox}>
+                            {executionResult}
+                        </pre>
+                    </div>
+                </div>
+            </div>
         </div>
     );
-};
+}
 
 export default IntervieweeContent;
