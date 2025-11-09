@@ -1,5 +1,5 @@
 //api.js
-export const BASE_URL = 'http://8.148.191.101:80'; // 替换为实际的 API 基础 URL
+export const BASE_URL = 'https://8.148.191.101:80'; // 替换为实际的 API 基础 URL
 export const BASE_URL1 = 'http://localhost:5000/api';
 
 export const API_ENDPOINTS = {
@@ -13,8 +13,10 @@ export const API_ENDPOINTS = {
     empTaskInsert: `${BASE_URL}/emp/TaskInsertById`,
     empTaskDelete: `${BASE_URL}/emp/TaskDeleteById`,
     empitvQuery: `${BASE_URL}/emp/QueryMszById`,
+    empTaskAlert: `${BASE_URL}/emp/TaskAlertById`,
     // 面试者接口
     itvTaskQuery: `${BASE_URL}/itv/TaskQueryById`,
+    itvTaskAlert: `${BASE_URL}/itv/TaskAlertById`,
     //员工个人信息
     empQuery: `${BASE_URL}/emp/QueryById`, 
     empAlert: `${BASE_URL}/emp/AlertById`,

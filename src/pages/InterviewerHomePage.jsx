@@ -215,19 +215,122 @@ const InterviewerHome = () => {
         }
     };
 
-    const handleEnterRoom = (interview) => {
-        const now = new Date();
-        const start = new Date(interview.startTime);
-        const end = new Date(interview.endTime);
+    // 更新房间状态的辅助函数 - 也改为JSON格式
+    const updateRoomStatus = async (roomId, interviewId, newStatus) => {
+        try {
+            const requestBody = {
+                fjh: roomId,
+                zt: newStatus
+            };
 
-        if (now < start || now > end) {
-            toast.error('不在面试时间范围内');
-            return;
+            const response = await fetch(API_ENDPOINTS.empTaskAlert, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json', // 改为JSON
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                // 更新前端状态
+                setInterviews(prev => prev.map(item => 
+                    item.id === interviewId 
+                        ? { ...item, status: newStatus }
+                        : item
+                ));
+                return true;
+            } else {
+                throw new Error(result.msg || '更新状态失败');
+            }
+        } catch (error) {
+            console.error('更新房间状态失败:', error);
+            return false;
         }
-
-        navigate(`/interviewer/content/${interview.roomId}`);
     };
 
+    const handleEnterRoom = async (interview) => {
+        try {
+            const now = new Date();
+            const start = new Date(interview.startTime);
+            const end = new Date(interview.endTime);
+
+            // 基本时间验证
+            if (now < start) {
+                debounceToast('面试尚未开始');
+                return;
+            }
+            
+            if (now > end) {
+                debounceToast('面试已结束');
+                await updateRoomStatus(interview.roomId, interview.id, '已结束');
+                return;
+            }
+
+            // 构建JSON格式的请求体 - 与Postman一致
+            const requestBody = {
+                fjh: interview.roomId,
+                zt: 'check' // 查询状态
+            };
+
+            console.log('发送的请求体:', JSON.stringify(requestBody));
+
+            const response = await fetch(API_ENDPOINTS.empTaskAlert, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json', // 改为JSON格式
+                },
+                body: JSON.stringify(requestBody) // 序列化为JSON字符串
+            });
+
+            const result = await response.json();
+            console.log('接口响应:', result);
+            
+            if (!response.ok || !result.success) {
+                throw new Error(result.msg || '获取房间状态失败');
+            }
+
+            // 获取实际状态
+            const currentStatus = result.data?.zt || result.zt || interview.status;
+            
+            console.log('房间当前状态:', currentStatus);
+
+            // 更新前端任务栏显示的状态
+            setInterviews(prev => prev.map(item => 
+                item.id === interview.id 
+                    ? { ...item, status: currentStatus }
+                    : item
+            ));
+
+            // 状态处理逻辑
+            switch (currentStatus) {
+                case '进行中':
+                    navigate(`/interviewer/content/${interview.roomId}`);
+                    break;
+                    
+                case '未开始':
+                    debounceToast(`房间状态: ${currentStatus}，请等待面试开始`);
+                    break;
+                    
+                case '已结束':
+                    debounceToast(`房间状态: ${currentStatus}，无法进入`);
+                    break;
+                    
+                case '已关闭':
+                    debounceToast(`房间状态: ${currentStatus}，房间已关闭`);
+                    break;
+                    
+                default:
+                    debounceToast(`房间状态: ${currentStatus}，无法进入`);
+                    break;
+            }
+
+        } catch (error) {
+            console.error('进入房间失败:', error);
+            debounceToast(`进入房间失败: ${error.message}`);
+        }
+    };
     const handleDeleteInterview = async (interviewId) => {
         try {
             // 使用 URLSearchParams 来构建 x-www-form-urlencoded 格式的数据
@@ -345,7 +448,7 @@ const InterviewerHome = () => {
                                             <button 
                                                 className="enter-btn"
                                                 onClick={() => handleEnterRoom(interview)}
-                                                disabled={interview.status !== '进行中' || new Date() < new Date(interview.startTime) || new Date() > new Date(interview.endTime)}
+                                                disabled={interview.status === '已结束' || interview.status === '已关闭'}
                                             >
                                                 进入
                                             </button>
