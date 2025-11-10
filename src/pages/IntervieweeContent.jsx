@@ -153,7 +153,7 @@ const IntervieweeContent = () => {
         }
 
         // 2a. 启动 Webgazer 监听 (眼动数据 P2P 发送 + 后端缓冲)
-        webgazer.setGazeListener((data, _elapsedTime) => { // 修正: _elapsedTime
+        webgazer.setGazeListener((data) => { // 修正: _elapsedTime
             if (data == null) return;
 
             // 2a-1. 推入缓冲区，用于后端5秒上报
@@ -165,7 +165,7 @@ const IntervieweeContent = () => {
 
             // 2a-2. 通过 P2P DataChannel 实时发送给面试官
             if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
-                const dataToSend = { type: 'gaze', content: { x: data.x, y: data.y } };
+                const dataToSend = { type: 'gaze', content: { x: data.x, y: data.y, t: Date.now() } };
                 dataChannelRef.current.send(JSON.stringify(dataToSend));
             }
         });

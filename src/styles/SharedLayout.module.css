@@ -197,9 +197,56 @@
   font-style: italic;
 }
 
-.statusPanel {
-  /* ... */
-  min-width: 100px;
-  max-height: 100px; /* 关键：限制最大高度 */
-  overflow-y: auto;  /* 关键：当内容超出时，自动显示垂直滚动条 */
+/* --- 应聘者实时行为面板  --- */
+.behaviorPanel {
+  margin-top: 1rem;             /* 与上方元素保持间距 */
+  padding: 15px;                /* 舒适的内边距 */
+  border: 1px solid #dee2e6;    /* 统一的浅灰色边框 */
+  border-radius: 6px;           /* 统一的圆角 */
+  background-color: #ffffff;    /* 白色背景，突出内容 */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* 轻微的阴影，增加立体感 */
+  text-align: center;           /* 文字水平居中 */
+  min-height: 60px;            /* 保证一个最小高度，避免内容变化时跳动 */
+  display: flex;                /* 使用 Flexbox 来垂直居中 */
+  align-items: center;          /* 垂直居中 */
+  justify-content: center;      /* 水平居中 */
+}
+
+/* 行为状态文字的基础样式 */
+.behaviorPanel p {
+  margin: 0;
+  font-size: 1.2rem;            /* 稍微大一点的字体 */
+  font-weight: 600;             /* 加粗，更醒目 */
+  padding: 6px 12px;            /* 文字周围的留白 */
+  border-radius: 4px;           /* 文字背景的圆角 */
+  transition: all 0.3s ease;    /* 平滑的颜色和背景过渡 */
+  width: 100%;                  /* 占满面板宽度 */
+}
+
+/* 注视状态的样式 (绿色主题) */
+.behaviorFixation {
+  background-color: #e8f5e9;    /* 非常浅的绿色背景 */
+  color: #2e7d32;               /* 深绿色文字，对比度更高 */
+  border: 1px solid #c8e6c9;    /* 浅绿色边框 */
+}
+
+/* 眼跳状态的样式 (橙色/黄色主题) */
+.behaviorSaccade {
+  background-color: #fff3e0;    /* 非常浅的橙色背景 */
+  color: #e65100;               /* 深橙色文字 */
+  border: 1px solid #ffe0b2;    /* 浅橙色边框 */
+}
+
+/* 阅读状态 (绿色) */
+.behaviorReading {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+/* 非阅读/浏览状态 (灰色或中性色) */
+.behaviorBrowsing {
+  background-color: #f5f5f5;
+  color: #616161;
+  border: 1px solid #e0e0e0;
 }
