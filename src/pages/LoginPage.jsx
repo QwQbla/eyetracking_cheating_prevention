@@ -53,7 +53,7 @@ const LoginPage = () => {
             if (response.ok) {
                 toast.success('验证码发送成功');
             } else {
-                toast.error(result.msg || '验证码发送失败');
+                toast.error(result.message || '验证码发送失败,请检查邮箱号或联系工作人员解决');
             }
         } catch (error) {
             toast.error('服务器连接失败');
@@ -91,7 +91,7 @@ const LoginPage = () => {
                     }
                 }, 1000); 
             } else {
-                toast.error(result.msg || '登录失败，请重试');
+                toast.error(result.message || '登录失败，请重试');
             }
         } catch (error) {
             toast.error('网络错误，请稍后重试');

@@ -268,10 +268,13 @@ const InterviewerHome = () => {
                 return;
             }
 
+            // 获取实际状态
+            const currentStatus = interview.status;
+
             // 构建JSON格式的请求体 - 与Postman一致
             const requestBody = {
                 fjh: interview.roomId,
-                zt: 'check' // 查询状态
+                zt: currentStatus // 查询状态
             };
 
             console.log('发送的请求体:', JSON.stringify(requestBody));
@@ -290,9 +293,6 @@ const InterviewerHome = () => {
             if (!response.ok || !result.success) {
                 throw new Error(result.msg || '获取房间状态失败');
             }
-
-            // 获取实际状态
-            const currentStatus = result.data?.zt || result.zt || interview.status;
             
             console.log('房间当前状态:', currentStatus);
 

@@ -2,9 +2,8 @@
 .message-container {
   color: #e74c3c;
   font-size: 14px;
-  margin: -10px 0 15px;
+  margin: -20px 0 0;
   text-align: left;
-  padding-left: 5px;
 }
 
 /* Toast成功样式 */
@@ -101,7 +100,7 @@
   margin-left: 10px;
   padding: 12px 16px;
   background-color: #3498db;
-  width:23vh;
+  width:30vh;
   color: white;
   border: none;
   border-radius: 4px;

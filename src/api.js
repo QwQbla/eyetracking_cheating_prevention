@@ -1,5 +1,5 @@
 //api.js
-export const BASE_URL = 'https://api.qwq.christmas'; // 替换为实际的 API 基础 URL
+export const BASE_URL = 'https://8.148.191.101'; // 替换为实际的 API 基础 URL
 export const BASE_URL1 = 'http://localhost:5000/api';
 
 export const API_ENDPOINTS = {
