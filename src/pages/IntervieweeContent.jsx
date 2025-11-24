@@ -43,11 +43,7 @@ const IntervieweeContent = () => {
         return savedQuestion !== null ? savedQuestion : '请等待面试官发布题目...';
     });
     const [executionResult, setExecutionResult] = useState(''); // 代码执行结果
-    const [statusLog, setStatusLog] = useState([{ // 面试状态日志
-        id: Date.now(),
-        type: 'system',
-        message: '正在等待面试官进入房间...'
-    }]);
+    const [statusLog, setStatusLog] = useState([]); // 面试状态日志
     const [isInterviewOver, setIsInterviewOver] = useState(false); // 标记面试是否已由后端结束
 
     // --- 引用 ---
@@ -74,6 +70,16 @@ const IntervieweeContent = () => {
     const performCleanupAndNavigate = useCallback(() => {
         console.log("正在清理资源并返回主页面...");
         
+        // 0. 发送离开房间的状态更新（在断开连接之前）
+        if (socketRef.current) {
+            const leaveStatus = {
+                id: Date.now(),
+                type: 'info',
+                message: '应聘者已离开房间'
+            };
+            socketRef.current.emit('status-update', leaveStatus);
+        }
+        
         // 1. 停止数据上传定时器
         if (intervalIdRef.current) {
             clearInterval(intervalIdRef.current);
@@ -87,8 +93,10 @@ const IntervieweeContent = () => {
         if (pcRef.current) pcRef.current.close();
         if (dataChannelRef.current) dataChannelRef.current.close();
         
-        // 4. 清理 Socket.IO
-        if (socketRef.current) socketRef.current.disconnect();
+        // 4. 清理 Socket.IO（延迟断开，确保消息能够发送）
+        setTimeout(() => {
+            if (socketRef.current) socketRef.current.disconnect();
+        }, 100);
         
         // 5. 清理 Worker
         if (workerRef.current) workerRef.current.terminate();
@@ -97,8 +105,10 @@ const IntervieweeContent = () => {
         sessionStorage.removeItem(`interview_code_${roomId}`);
         sessionStorage.removeItem(`interview_question_${roomId}`);
         
-        // 7. 导航回主页
-        navigate('/interviewee/home');
+        // 7. 导航回主页（延迟导航，确保消息能够发送）
+        setTimeout(() => {
+            navigate('/interviewee/home');
+        }, 150);
     }, [navigate, roomId, shutdownWebgazer]);
 
     /**
@@ -185,7 +195,7 @@ const IntervieweeContent = () => {
                 message: '应聘者已进入房间'
             };
             socket.emit('status-update', myStatus);
-            setStatusLog(prevLog => [...prevLog, myStatus]);
+            setStatusLog([myStatus]);
         });
 
         socket.on('status-update', (data) => {
@@ -271,12 +281,26 @@ const IntervieweeContent = () => {
 
         // 2f. 清理函数
         return () => {
+            // 发送离开房间的状态更新（组件卸载时）
+            if (socket && socket.connected) {
+                const leaveStatus = {
+                    id: Date.now(),
+                    type: 'info',
+                    message: '应聘者已离开房间'
+                };
+                socket.emit('status-update', leaveStatus);
+                // 延迟断开，确保消息能够发送
+                setTimeout(() => {
+                    if (socket) socket.disconnect();
+                }, 100);
+            } else {
+                if (socket) socket.disconnect();
+            }
             webgazer.clearGazeListener();
             if (pcRef.current) {
                 pcRef.current.close();
                 pcRef.current = null;
             }
-            if (socket) socket.disconnect();
             socketRef.current = null; // 清理 ref
         };
     }, [stream, roomId]); // 依赖 stream 和 roomId

@@ -13,7 +13,7 @@ import { ReadingDetector, calculateCentroid, calculateAmplitude, calculateDirect
 
 // 样式
 import styles from '../styles/SharedLayout.module.css';
-// import '../styles/InterviewerContent.css'; // 如果有特定样式，请取消注释
+// import '../styles/InterviewerContent.css'; 
 
 // --- 2. 常量 (Constants) ---
 // WebRTC 配置
@@ -226,7 +226,7 @@ const InterviewerContent = () => {
             // 发送面试官进入房间的状态更新
             const myStatus = {
                 id: Date.now(),
-                type: 'info',
+                type: 'success',
                 message: '面试官已进入房间'
             };
             socket.emit('status-update', myStatus);
@@ -266,7 +266,21 @@ const InterviewerContent = () => {
 
         // 清理函数
         return () => {
-            if (socket) socket.disconnect();
+            // 发送离开房间的状态更新（组件卸载时）
+            if (socket && socket.connected) {
+                const leaveStatus = {
+                    id: Date.now(),
+                    type: 'info',
+                    message: '面试官已离开房间'
+                };
+                socket.emit('status-update', leaveStatus);
+                // 延迟断开，确保消息能够发送
+                setTimeout(() => {
+                    if (socket) socket.disconnect();
+                }, 100);
+            } else {
+                if (socket) socket.disconnect();
+            }
             if (pcRef.current) pcRef.current.close();
             // * 修复：使用 localStreamRef 正确关闭摄像头
             if (localStreamRef.current) {
@@ -351,7 +365,19 @@ const InterviewerContent = () => {
     };
 
     const handleReturnToMenu = () => {
-        navigate('/interviewer/home');
+        // 发送离开房间的状态更新
+        if (socketRef.current) {
+            const leaveStatus = {
+                id: Date.now(),
+                type: 'info',
+                message: '面试官已离开房间'
+            };
+            socketRef.current.emit('status-update', leaveStatus);
+        }
+        // 延迟导航，确保消息能够发送
+        setTimeout(() => {
+            navigate('/interviewer/home');
+        }, 100);
     };
 
     // --- 9. 渲染 (JSX) ---
