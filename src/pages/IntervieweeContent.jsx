@@ -182,7 +182,7 @@ const IntervieweeContent = () => {
 
         // 2b. 初始化 Socket.IO 连接
         //const socket = io('http://localhost:8080');
-        const socket = io('https://signaling.eyecheating.deepalgo.cn');
+        const socket = io('https://signaling.deepalgo.cn');
         socketRef.current = socket;
 
         // 2c. Socket.IO 事件监听

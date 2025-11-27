@@ -216,7 +216,7 @@ const InterviewerContent = () => {
     // Effect 2: 核心信令连接 (Socket.IO) & 资源清理
     useEffect(() => {
         //const socket = io('http://localhost:8080');
-        const socket = io('https://signaling.eyecheating.deepalgo.cn');
+        const socket = io('https://signaling.deepalgo.cn');
         socketRef.current = socket;
 
         socket.on('connect', () => {
