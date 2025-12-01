@@ -1,14 +1,19 @@
 // signaling-server.js
 import { Server } from 'socket.io';
 
+const PORT = process.env.PORT || 8080;
+
+const ALLOWED_ORIGIN = process.env.NODE_ENV === 'production' 
+    ? 'https://your-interview-site.com' 
+    : '*';
 // 启动服务器，并配置 CORS 策略，允许任何来源的连接
-const io = new Server(8080, {
+const io = new Server(PORT, {
   cors: {
-    origin: "*", 
-  }
+        origin: ALLOWED_ORIGIN, 
+    }
 });
 
-console.log('Socket.IO 信令服务器已启动在 8080 端口');
+console.log(`Socket.IO 信令服务器已启动在 ${PORT} 端口，仅允许 ${ALLOWED_ORIGIN} 访问。`);
 
 // 监听客户端连接事件
 io.on('connection', (socket) => {
