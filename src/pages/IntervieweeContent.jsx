@@ -202,6 +202,19 @@ const IntervieweeContent = () => {
         socket.on('status-update', (data) => {
             console.log('收到状态更新:', data.message);
             setStatusLog(prevLog => [...prevLog, { ...data, id: Date.now() }]);
+
+            if (data.message && data.message.includes('面试官已进入房间')) {
+                console.log('检测到面试官进入，应聘者发送存在反馈...');
+                setTimeout(() => {
+                    const feedbackStatus = {
+                        id: Date.now(),
+                        type: 'info',
+                        message: '应聘者已在房间内'
+                    };
+                    socket.emit('status-update', feedbackStatus);
+                }, 500);
+            }
+            
         });
 
         // 2d. WebRTC 核心逻辑

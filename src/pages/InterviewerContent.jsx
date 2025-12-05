@@ -253,6 +253,19 @@ const InterviewerContent = () => {
         socket.on('status-update', (data) => {
             console.log('收到状态更新:', data.message);
             setStatusLog(prevLog => [...prevLog, { ...data, id: Date.now() }]);
+
+            if (data.message && data.message.includes('应聘者已进入房间')) {
+                console.log('检测到应聘者进入，面试官发送存在反馈...');
+                setTimeout(() => {
+                    const feedbackStatus = {
+                        id: Date.now(),
+                        type: 'info',
+                        message: '面试官已在房间内'
+                    };
+                    socket.emit('status-update', feedbackStatus);
+                }, 500);
+            }
+            
         });
 
         // WebRTC 信令
