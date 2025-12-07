@@ -139,8 +139,8 @@ const LoginPage = () => {
                 <div className="input-group">
                     <label htmlFor="userType">用户类型：</label>
                     <select id="userType" value={userType} onChange={handleUserTypeChange} className='user-type-select'>
-                        <option value="interviewer">面试者</option>
-                        <option value="interviewee">面试官</option>
+                        <option value="interviewee">面试者</option>
+                        <option value="interviewer">面试官</option>
                     </select>
                 </div>
                 {message && <div className="message-container">{message}</div>}

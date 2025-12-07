@@ -108,7 +108,7 @@ th {
     color: #95a5a6;
 }
 
-.view-btn, .enter-btn {
+.view-btn, .enter-btn, .delete-btn {
     padding: 6px 12px;
     margin-right: 8px;
     border: none;
@@ -121,6 +121,7 @@ th {
 .view-btn {
     background-color: #3498db;
     color: white;
+    padding: 6px 12px;
 }
 
 .view-btn:hover {
@@ -130,6 +131,7 @@ th {
 .enter-btn {
     background-color: #2980b9;
     color: white;
+    padding: 6px 12px;
 }
 
 .enter-btn:hover {
@@ -241,20 +243,6 @@ th {
   border-color: #3498db;
 }
 
-/* 查看按钮样式 */
-.view-btn {
-    background-color: #1890ff;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 5px;
-}
-
-.view-btn:hover {
-    background-color: #40a9ff;
-}
 
 /* 查看模态框样式 */
 .view-modal {
