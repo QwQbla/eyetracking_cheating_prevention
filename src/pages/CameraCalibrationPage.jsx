@@ -16,7 +16,7 @@ import { useWebgazer } from '../hooks/useWebgazer';
 // --- 用于校准序列的常量 ---
 // 定义校准点的顺时针顺序，不包括中心点。
 const CALIBRATION_SEQUENCE = ['Pt1', 'Pt2', 'Pt3', 'Pt6', 'Pt9', 'Pt8', 'Pt7', 'Pt4'];
-const TOTAL_CYCLES = 1;
+const TOTAL_CYCLES = 3;
 const TOTAL_STEPS = CALIBRATION_SEQUENCE.length * TOTAL_CYCLES;
 
 /**
@@ -148,14 +148,14 @@ function CameraCalibrationPage() {
             setAccuracy(precision_measurement);
 
             swal({
-                title: precision_measurement > 0 ? "您已经校准成功" : `您的精度测量结果为 ${precision_measurement}%,精度过低，需要重新校准。`,
+                title: precision_measurement > 60 ? "您已经校准成功" : `您的精度测量结果为 ${precision_measurement}%,精度过低，需要重新校准。`,
                 allowOutsideClick: false,
                 buttons: {
-                    cancel: precision_measurement > 0 ? false : "重新校准",
+                    cancel: precision_measurement > 60 ? false : "重新校准",
                     confirm: true
                 }
             }).then(isConfirm => {
-                if (precision_measurement > 0 && isConfirm) {
+                if (precision_measurement > 60 && isConfirm) {
                     setShowCalibrationButtons(false);
                     setActivePointId(null);
                     ClearCanvas();

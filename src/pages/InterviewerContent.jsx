@@ -9,7 +9,18 @@ import { io } from 'socket.io-client';
 
 // 相关组件与工具
 import SharedCodeEditor from '../components/SharedCodeEditor';
-import { ReadingDetector, calculateCentroid, calculateAmplitude, calculateDirection } from '../utils/GazeAnalysis';
+import { 
+    ReadingDetector, 
+    calculateCentroid, 
+    calculateAmplitude, 
+    calculateDirection,
+    GLOBAL_DISPERSION_THRESHOLD,
+    WINDOW_DURATION_MS,
+    FIXATION_MIN_DURATION_MS,
+    FIXATION_MAX_DURATION_MS,
+    SACCADE_MIN_AMPLITUDE_PX,
+    SACCADE_MAX_AMPLITUDE_PX
+} from '../utils/GazeAnalysis';
 
 // 样式
 import styles from '../styles/SharedLayout.module.css';
@@ -22,8 +33,6 @@ const configuration = {
 };
 
 // I-DT 算法参数 
-const DISPERSION_THRESHOLD = 100; // 离散度阈值
-const WINDOW_DURATION_MS = 150;   // 时间窗口
 const MIN_POINTS_FOR_FIXATION = 5; // 最小点数
 
 /**
@@ -95,7 +104,7 @@ const InterviewerContent = () => {
              }
              // 计算离散度
              const dispersion = (maxX - minX) + (maxY - minY);
-             if (dispersion <= DISPERSION_THRESHOLD) {
+             if (dispersion <= GLOBAL_DISPERSION_THRESHOLD) {
                  instantClassification = 'Fixation'; // 离散度低，判定为注视
                  console.log(`[I-DT] 检测到注视 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
              } else {
@@ -141,7 +150,8 @@ const InterviewerContent = () => {
 
             // 根据事件类型构建事件对象
             if (currentEvent.state === 'FIXATING') {
-                if (duration >= 30) { // 忽略太短的注视
+                // 使用 FIXATION_MIN_DURATION_MS 和 FIXATION_MAX_DURATION_MS 过滤注视
+                if (duration >= FIXATION_MIN_DURATION_MS && duration <= FIXATION_MAX_DURATION_MS) {
                     const centroid = calculateCentroid(points);
                     eventObject = {
                         type: 'Fixation', startTime, endTime, duration,
@@ -149,27 +159,32 @@ const InterviewerContent = () => {
                     };
                     console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
                 } else {
-                    console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms`);
+                    if (duration < FIXATION_MIN_DURATION_MS) {
+                        console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
+                    } else {
+                        console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
+                    }
                 }
             } else { // SACCADING
-                if (duration >= 10) { // 忽略太短的眼跳
-                     const startPoint = points[0];
-                     const endPoint = points[points.length - 1];
-                     const amplitude = calculateAmplitude(startPoint, endPoint);
-                     if (amplitude >= 10) { // 忽略微小抖动
-                         const direction = calculateDirection(startPoint, endPoint);
-                         eventObject = {
-                             type: 'Saccade', startTime, endTime, duration,
-                             startPoint, endPoint,
-                             amplitude,
-                             direction
-                         };
-                         console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
-                     } else {
-                         console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px`);
-                     }
+                const startPoint = points[0];
+                const endPoint = points[points.length - 1];
+                const amplitude = calculateAmplitude(startPoint, endPoint);
+                // 使用 SACCADE_MIN_AMPLITUDE_PX 和 SACCADE_MAX_AMPLITUDE_PX 过滤眼跳
+                if (amplitude >= SACCADE_MIN_AMPLITUDE_PX && amplitude <= SACCADE_MAX_AMPLITUDE_PX) {
+                    const direction = calculateDirection(startPoint, endPoint);
+                    eventObject = {
+                        type: 'Saccade', startTime, endTime, duration,
+                        startPoint, endPoint,
+                        amplitude,
+                        direction
+                    };
+                    console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
                 } else {
-                    console.log(`[事件] 眼跳太短被忽略 - 时长: ${duration.toFixed(0)}ms`);
+                    if (amplitude < SACCADE_MIN_AMPLITUDE_PX) {
+                        console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
+                    } else {
+                        console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
+                    }
                 }
             }
 
@@ -238,6 +253,19 @@ const InterviewerContent = () => {
         socket.on('status-update', (data) => {
             console.log('收到状态更新:', data.message);
             setStatusLog(prevLog => [...prevLog, { ...data, id: Date.now() }]);
+
+            if (data.message && data.message.includes('应聘者已进入房间')) {
+                console.log('检测到应聘者进入，面试官发送存在反馈...');
+                setTimeout(() => {
+                    const feedbackStatus = {
+                        id: Date.now(),
+                        type: 'info',
+                        message: '面试官已在房间内'
+                    };
+                    socket.emit('status-update', feedbackStatus);
+                }, 500);
+            }
+            
         });
 
         // WebRTC 信令

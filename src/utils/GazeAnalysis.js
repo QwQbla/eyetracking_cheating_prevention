@@ -1,5 +1,22 @@
 // src/utils/GazeAnalysis.js
 
+// --- 全局参数配置 ---
+export let GLOBAL_DISPERSION_THRESHOLD = 100; // P1: 离散度:区分眼跳和注视。 [cite: 8]
+export let GLOBAL_MODIFIER_RATE = 0.1; // P3: 阅读置信度的衰减速度 [cite: 8]
+export let GLOBAL_CONFIDENCE_THRESHOLD = 0.75; // P4: 阅读置信度的及格线 (默认值 0.5) [cite: 8]
+export const WINDOW_DURATION_MS = 150; // P2: 时间窗口:算法回顾历史的时长 [cite: 8]
+
+// 次要参数 (用于事件过滤和模式匹配)
+export const FIXATION_MIN_DURATION_MS = 80; // P5: 滤除过短的扫视或抖动 [cite: 8]
+export const FIXATION_MAX_DURATION_MS = 800; // P6: 过滤过长的注视 (如发呆、暂停) [cite: 8]
+export const SACCADE_MIN_AMPLITUDE_PX = 50; // P7: 滤除微小的眼动 [cite: 8]
+export const SACCADE_MAX_AMPLITUDE_PX = 500; // P8: 过滤过大的移动 [cite: 8]
+
+// 奖励值
+export const FORWARD_BONUS = 0.4; // P9: 标准阅读奖励 [cite: 8]
+export const REGRESSION_BONUS = 0.3; // P10: 回读奖励 [cite: 8]
+export const WEAK_MATCH_BONUS = 0.15; // P11: 弱匹配奖励 [cite: 8]
+
 // --- L1/L2 辅助函数 ---
 // 计算质心
 export function calculateCentroid(points) {
@@ -52,8 +69,8 @@ export class ReadingDetector {
           this.evaluateReadingPattern();
       }
 
-      // 返回判断结果
-      if (this.readingConfidence > 0.25) {
+      // 返回判断结果 - 使用 GLOBAL_CONFIDENCE_THRESHOLD
+      if (this.readingConfidence > GLOBAL_CONFIDENCE_THRESHOLD) {
           return { status: '阅读 (Reading)', className: 'behaviorReading' };
       } else {
           return { status: '非阅读 (Browsing)', className: 'behaviorBrowsing' };
@@ -66,30 +83,31 @@ export class ReadingDetector {
 
       if (!lastFix || !lastSac || lastSac.type !== 'Saccade') {
           console.log('[ReadingDetector] 事件序列不符合要求，置信度衰减');
-          this.decayConfidence(0.1);
+          this.decayConfidence(GLOBAL_MODIFIER_RATE);
           return;
       }
 
-      this.decayConfidence(0.1); // 基础衰减
+      // 使用 GLOBAL_MODIFIER_RATE 作为基础衰减
+      this.decayConfidence(GLOBAL_MODIFIER_RATE);
 
-      // 宽松的规则判断
-      const rule1_Duration = lastFix.duration > 100 && lastFix.duration < 600;
+      // 使用参数化的规则判断
+      const rule1_Duration = lastFix.duration >= FIXATION_MIN_DURATION_MS && lastFix.duration <= FIXATION_MAX_DURATION_MS;
       const isRightward = ['Right', 'Right-Down', 'Right-Up'].includes(lastSac.direction);
       const isLeftward = ['Left', 'Left-Down', 'Left-Up'].includes(lastSac.direction);
-      const isForwardAmplitude = lastSac.amplitude > 30 && lastSac.amplitude < 450;
-      const isRegressionAmplitude = lastSac.amplitude > 10 && lastSac.amplitude < 250;
+      const isForwardAmplitude = lastSac.amplitude >= SACCADE_MIN_AMPLITUDE_PX && lastSac.amplitude <= SACCADE_MAX_AMPLITUDE_PX;
+      const isRegressionAmplitude = lastSac.amplitude >= SACCADE_MIN_AMPLITUDE_PX && lastSac.amplitude <= SACCADE_MAX_AMPLITUDE_PX;
 
       console.log(`[ReadingDetector] 分析模式 - 注视: ${lastFix.duration.toFixed(0)}ms, 眼跳: ${lastSac.amplitude.toFixed(0)}px ${lastSac.direction}`);
 
       if (rule1_Duration && isRightward && isForwardAmplitude) {
-          console.log('[ReadingDetector] ✅ 检测到前向阅读模式 (+0.35)');
-          this.increaseConfidence(0.35); // 前向阅读信号
+          console.log(`[ReadingDetector] ✅ 检测到前向阅读模式 (+${FORWARD_BONUS})`);
+          this.increaseConfidence(FORWARD_BONUS); // 前向阅读信号
       } else if (rule1_Duration && isLeftward && isRegressionAmplitude) {
-          console.log('[ReadingDetector] ✅ 检测到回读模式 (+0.2)');
-          this.increaseConfidence(0.2);  // 回读信号
+          console.log(`[ReadingDetector] ✅ 检测到回读模式 (+${REGRESSION_BONUS})`);
+          this.increaseConfidence(REGRESSION_BONUS);  // 回读信号
       } else if (isRightward && isForwardAmplitude) {
-          console.log('[ReadingDetector] ⚠️ 检测到弱阅读信号 (+0.1)');
-          this.increaseConfidence(0.1);  // 弱信号
+          console.log(`[ReadingDetector] ⚠️ 检测到弱阅读信号 (+${WEAK_MATCH_BONUS})`);
+          this.increaseConfidence(WEAK_MATCH_BONUS);  // 弱信号
       } else {
           console.log('[ReadingDetector] ❌ 未检测到阅读模式');
       }
