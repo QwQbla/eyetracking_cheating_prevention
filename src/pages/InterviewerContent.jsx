@@ -62,6 +62,9 @@ const InterviewerContent = () => {
     const [gazePoint, setGazePoint] = useState({ x: -100, y: -100, visible: false });
     const [intervieweeBehavior, setIntervieweeBehavior] = useState('等待数据...');
     const [behaviorClass, setBehaviorClass] = useState(''); // 用于控制行为面板颜色的 CSS 类名
+    // 控制开关状态
+    const [showGazePoint, setShowGazePoint] = useState(false); // 控制眼动点渲染，默认关闭
+    const [showReadingStatus, setShowReadingStatus] = useState(false); // 控制阅读状态提示组件渲染，默认关闭
 
     // --- 5. 引用 (Refs) ---
     // DOM 引用
@@ -342,7 +345,7 @@ const InterviewerContent = () => {
             // 确保只处理 'gaze' 类型的原始数据
             if (msg.type === 'gaze') {
                 const { x, y, t } = msg.content;
-                // 1. 渲染红点
+                // 1. 渲染红点（仅在开关开启时更新可见性）
                 setGazePoint({ x, y, visible: true });
                 // 2. 驱动 L1/L2 分析流程
                 processGazeData(x, y, t);
@@ -412,8 +415,8 @@ const InterviewerContent = () => {
     // --- 9. 渲染 (JSX) ---
     return (
         <div className={styles.pageContainer}>
-            {/* 眼动坐标红点 */}
-            {gazePoint.visible && (
+            {/* 眼动坐标红点 - 仅在开关开启时渲染 */}
+            {showGazePoint && gazePoint.visible && (
                 <div 
                     className={styles.gazeDot} 
                     style={{ left: `${gazePoint.x}px`, top: `${gazePoint.y}px` }}
@@ -427,6 +430,33 @@ const InterviewerContent = () => {
                 <video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />
                 <button onClick={startCall} className={styles.callButton}>开始面试</button>
 
+                {/* 控制开关区域 */}
+                <h4>控制开关状态</h4>
+                <div className={styles.controlSection}>
+                    <div className={styles.toggleContainer}>
+                        <label className={styles.toggleLabel}>
+                            <input
+                                type="checkbox"
+                                checked={showGazePoint}
+                                onChange={(e) => setShowGazePoint(e.target.checked)}
+                                className={styles.toggleInput}
+                            />
+                            <span className={styles.toggleText}>显示眼动点</span>
+                        </label>
+                    </div>
+                    <div className={styles.toggleContainer}>
+                        <label className={styles.toggleLabel}>
+                            <input
+                                type="checkbox"
+                                checked={showReadingStatus}
+                                onChange={(e) => setShowReadingStatus(e.target.checked)}
+                                className={styles.toggleInput}
+                            />
+                            <span className={styles.toggleText}>显示阅读状态</span>
+                        </label>
+                    </div>
+                </div>
+
                 <h4>面试状态</h4>
                 <div className={styles.statusPanel} ref={statusPanelRef}>
                     <ul>
@@ -438,14 +468,18 @@ const InterviewerContent = () => {
                     </ul>
                 </div>
 
-                {/* 实时行为面板 */}
-                <h4>应聘者实时行为</h4>
-                <div className={styles.behaviorPanel}>
-                    {/* 使用动态的 behaviorClass 来控制颜色 */}
-                    <p className={styles[behaviorClass] || ''}>
-                        {intervieweeBehavior}
-                    </p>
-                </div>
+                {/* 实时行为面板 - 仅在开关开启时渲染 */}
+                {showReadingStatus && (
+                    <>
+                        <h4>应聘者实时行为</h4>
+                        <div className={styles.behaviorPanel}>
+                            {/* 使用动态的 behaviorClass 来控制颜色 */}
+                            <p className={styles[behaviorClass] || ''}>
+                                {intervieweeBehavior}
+                            </p>
+                        </div>
+                    </>
+                )}
 
                 <button onClick={handleReturnToMenu} className={styles.button} style={{ marginTop: 'auto' }}>
                     离开面试

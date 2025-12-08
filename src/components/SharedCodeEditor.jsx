@@ -19,7 +19,6 @@ function SharedCodeEditor({ code, onCodeChange }) {
           width: '100%',
           height: '100%',
           flexGrow: 1, 
-          overflow: 'auto',
           borderRadius: '8px', 
         }}
       />
