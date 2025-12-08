@@ -12,11 +12,13 @@ function SharedCodeEditor({ code, onCodeChange }) {
         theme={vscodeDark}
         extensions={[javascript({ jsx: true })]}
         onChange={onCodeChange}
-        height='500px'
+        height="100%"
         style={{
           fontSize: '16px',
           fontFamily: 'monospace',
           width: '100%',
+          height: '100%',
+          overflow:'hidden',
           flexGrow: 1, 
           borderRadius: '8px'
         }}
