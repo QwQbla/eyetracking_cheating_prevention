@@ -10,7 +10,9 @@ import swal from 'sweetalert';
 
 // 相关组件与钩子 (Hooks)
 import SharedCodeEditor from '../components/SharedCodeEditor';
+import LanguageSelector from '../components/LanguageSelector';
 import { useWebgazer } from '../hooks/useWebgazer';
+import { LANGUAGE_CONFIG, DEFAULT_LANGUAGE } from '../config/languages';
 
 // 样式
 import styles from '../styles/SharedLayout.module.css';
@@ -36,6 +38,11 @@ const IntervieweeContent = () => {
     const [code, setCode] = useState(() => {
         const savedCode = sessionStorage.getItem(`interview_code_${roomId}`);
         return savedCode !== null ? savedCode : '// 在此输入代码...';
+    });
+    // 从 sessionStorage 恢复语言，否则使用默认值
+    const [language, setLanguage] = useState(() => {
+        const savedLanguage = sessionStorage.getItem(`interview_language_${roomId}`);
+        return savedLanguage !== null ? savedLanguage : DEFAULT_LANGUAGE;
     });
     // 从 sessionStorage 恢复问题
     const [question, setQuestion] = useState(() => {
@@ -103,6 +110,7 @@ const IntervieweeContent = () => {
         
         // 6. 清理 sessionStorage
         sessionStorage.removeItem(`interview_code_${roomId}`);
+        sessionStorage.removeItem(`interview_language_${roomId}`);
         sessionStorage.removeItem(`interview_question_${roomId}`);
         
         // 7. 导航回主页（延迟导航，确保消息能够发送）
@@ -293,6 +301,11 @@ const IntervieweeContent = () => {
             sessionStorage.setItem(`interview_question_${roomId}`, receivedQuestion);
         });
 
+        socket.on('language-update', (newLanguage) => {
+            setLanguage(newLanguage);
+            sessionStorage.setItem(`interview_language_${roomId}`, newLanguage);
+        });
+
         // 2f. 清理函数
         return () => {
             // 发送离开房间的状态更新（组件卸载时）
@@ -380,10 +393,76 @@ const IntervieweeContent = () => {
     };
 
     // 运行代码
-    const runCode = () => {
-        if (workerRef.current) {
-            setExecutionResult('正在执行代码...');
-            workerRef.current.postMessage({ code });
+    const runCode = async () => {
+        setExecutionResult('正在执行代码...');
+        
+        // JavaScript 在浏览器中直接执行
+        if (language === 'javascript') {
+            if (workerRef.current) {
+                workerRef.current.postMessage({ code, language });
+            }
+        } else {
+            // 其他语言调用后端服务执行
+            try {
+                const response = await fetch(API_ENDPOINTS.executeCode, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code,
+                        language,
+                        stdin: '',
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '执行失败');
+                }
+
+                if (data.success) {
+                    const result = data.result;
+                    const output = result.stdout || '';
+                    const error = result.stderr || '';
+                    const resultText = error
+                        ? `执行错误:\n${error}\n${output ? `\n输出:\n${output}` : ''}`
+                        : output || '执行完成，无输出';
+                    
+                    const resultData = {
+                        result: resultText,
+                        logs: [],
+                        error: error || null,
+                        executionTime: result.executionTime || 0,
+                    };
+
+                    setExecutionResult(JSON.stringify(resultData, null, 2));
+                    
+                    // 同步执行结果给面试官
+                    if (socketRef.current) {
+                        socketRef.current.emit('code-result', resultData);
+                    }
+                } else {
+                    throw new Error(data.error || '执行失败');
+                }
+            } catch (error) {
+                const errorMessage = `执行错误: ${error.message}\n\n请确保代码执行服务已启动。\n如果使用 Docker 方案，请确保 Docker 已安装并运行。`;
+                setExecutionResult(JSON.stringify({
+                    result: null,
+                    logs: [],
+                    error: errorMessage,
+                }, null, 2));
+                
+                // 同步错误给面试官
+                if (socketRef.current) {
+                    socketRef.current.emit('code-result', {
+                        result: null,
+                        logs: [],
+                        error: errorMessage,
+                    });
+                }
+            }
         }
     };
     
@@ -441,7 +520,16 @@ const IntervieweeContent = () => {
                     {/* 代码卡片 */}
                     <div className={`${styles.contentCard} ${styles.codeCard}`}>
                         <h4>代码区</h4>
-                        <SharedCodeEditor code={code} onCodeChange={handleCodeChange} />
+                        <LanguageSelector 
+                            language={language} 
+                            onLanguageChange={() => {}} 
+                            disabled={true}
+                        />
+                        <SharedCodeEditor 
+                            code={code} 
+                            onCodeChange={handleCodeChange} 
+                            language={language}
+                        />
                         {/* 修正: onClick 和 className 之间添加空格 */}
                         <button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>
                     </div>

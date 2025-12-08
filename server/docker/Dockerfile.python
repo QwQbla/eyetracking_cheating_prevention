@@ -1,0 +1,18 @@
+# Dockerfile for Python code execution
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /workspace
+
+# 禁用 Python 缓冲，确保输出实时显示
+ENV PYTHONUNBUFFERED=1
+
+# 创建非特权用户
+RUN useradd -m -u 1000 runner && \
+    chown -R runner:runner /workspace
+
+USER runner
+
+# 默认命令
+CMD ["python3"]
+

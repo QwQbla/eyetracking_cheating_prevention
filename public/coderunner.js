@@ -20,8 +20,18 @@ console.log = (...args) => {
 
 // 监听来自主线程的消息
 self.onmessage = (event) => {
-  const { code } = event.data;
+  const { code, language = 'javascript' } = event.data;
   logs.length = 0; // 每次运行前清空上次的日志
+
+  // 目前只有 JavaScript 可以在浏览器中直接执行
+  if (language !== 'javascript') {
+    self.postMessage({
+      result: null,
+      logs: [],
+      error: `当前环境仅支持 JavaScript 代码执行。${language.toUpperCase()} 代码的执行需要后端服务支持。请配置后端代码执行服务。`
+    });
+    return;
+  }
 
   try {
     // 使用 Function 构造函数来执行代码，而不是 eval，相对更安全一些

@@ -1,16 +1,22 @@
 // src/components/SharedCodeEditor.jsx
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
 import { vscodeDark } from '@uiw/codemirror-theme-vscode';
+import { LANGUAGE_CONFIG, DEFAULT_LANGUAGE } from '../config/languages';
 
-function SharedCodeEditor({ code, onCodeChange }) {
+function SharedCodeEditor({ code, onCodeChange, language = DEFAULT_LANGUAGE }) {
+  // 根据语言动态获取对应的 CodeMirror 扩展
+  const extensions = useMemo(() => {
+    const langConfig = LANGUAGE_CONFIG[language] || LANGUAGE_CONFIG[DEFAULT_LANGUAGE];
+    return [langConfig.extension];
+  }, [language]);
+
   return (
       <CodeMirror
         value={code}
         theme={vscodeDark}
-        extensions={[javascript({ jsx: true })]}
+        extensions={extensions}
         onChange={onCodeChange}
         height='500px'
         style={{

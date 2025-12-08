@@ -3,12 +3,15 @@
 // --- 1. 导入 (Imports) ---
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { API_ENDPOINTS } from '../api';
 
 // 核心库
 import { io } from 'socket.io-client';
 
 // 相关组件与工具
 import SharedCodeEditor from '../components/SharedCodeEditor';
+import LanguageSelector from '../components/LanguageSelector';
+import { LANGUAGE_CONFIG, DEFAULT_LANGUAGE } from '../config/languages';
 import { 
     ReadingDetector, 
     calculateCentroid, 
@@ -50,6 +53,10 @@ const InterviewerContent = () => {
     const [code, setCode] = useState(() => {
         const savedCode = sessionStorage.getItem(`interview_code_${roomId}`);
         return savedCode !== null ? savedCode : '// 在此输入代码...';
+    });
+    const [language, setLanguage] = useState(() => {
+        const savedLanguage = sessionStorage.getItem(`interview_language_${roomId}`);
+        return savedLanguage !== null ? savedLanguage : DEFAULT_LANGUAGE;
     });
     const [question, setQuestion] = useState(() => {
         const savedQuestion = sessionStorage.getItem(`interview_question_${roomId}`);
@@ -292,6 +299,10 @@ const InterviewerContent = () => {
              setQuestion(newQuestion);
              sessionStorage.setItem(`interview_question_${roomId}`, newQuestion);
         });
+        socket.on('language-update', (newLanguage) => {
+            setLanguage(newLanguage);
+            sessionStorage.setItem(`interview_language_${roomId}`, newLanguage);
+        });
 
         // 清理函数
         return () => {
@@ -381,6 +392,21 @@ const InterviewerContent = () => {
         socketRef.current?.emit('code-update', newCode);
     };
 
+    const handleLanguageChange = (newLanguage) => {
+        setLanguage(newLanguage);
+        sessionStorage.setItem(`interview_language_${roomId}`, newLanguage);
+        socketRef.current?.emit('language-update', newLanguage);
+        
+        // 如果切换语言且代码为空，设置默认代码模板
+        const langConfig = LANGUAGE_CONFIG[newLanguage];
+        if (langConfig && (!code || code.trim() === '' || code.includes('在此输入代码'))) {
+            const defaultCode = langConfig.defaultCode;
+            setCode(defaultCode);
+            sessionStorage.setItem(`interview_code_${roomId}`, defaultCode);
+            socketRef.current?.emit('code-update', defaultCode);
+        }
+    };
+
     const handleQuestionChange = (e) => {
         const newQuestion = e.target.value;
         setQuestion(newQuestion);
@@ -388,9 +414,77 @@ const InterviewerContent = () => {
         socketRef.current?.emit('question-update', newQuestion);
     };
 
-    const runCode = () => {
+    const runCode = async () => {
         setExecutionResult('正在执行代码...');
-        workerRef.current?.postMessage({ code });
+        
+        // JavaScript 在浏览器中直接执行
+        if (language === 'javascript') {
+            if (workerRef.current) {
+                workerRef.current.postMessage({ code, language });
+            }
+        } else {
+            // 其他语言调用后端服务执行
+            try {
+                const response = await fetch(API_ENDPOINTS.executeCode, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code,
+                        language,
+                        stdin: '',
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '执行失败');
+                }
+
+                if (data.success) {
+                    const result = data.result;
+                    const output = result.stdout || '';
+                    const error = result.stderr || '';
+                    const resultText = error
+                        ? `执行错误:\n${error}\n${output ? `\n输出:\n${output}` : ''}`
+                        : output || '执行完成，无输出';
+                    
+                    const resultData = {
+                        result: resultText,
+                        logs: [],
+                        error: error || null,
+                        executionTime: result.executionTime || 0,
+                    };
+
+                    setExecutionResult(JSON.stringify(resultData, null, 2));
+                    
+                    // 同步执行结果给面试者
+                    if (socketRef.current) {
+                        socketRef.current.emit('code-result', resultData);
+                    }
+                } else {
+                    throw new Error(data.error || '执行失败');
+                }
+            } catch (error) {
+                const errorMessage = `执行错误: ${error.message}\n\n请确保代码执行服务已启动。\n如果使用 Docker 方案，请确保 Docker 已安装并运行。`;
+                setExecutionResult(JSON.stringify({
+                    result: null,
+                    logs: [],
+                    error: errorMessage,
+                }, null, 2));
+                
+                // 同步错误给面试者
+                if (socketRef.current) {
+                    socketRef.current.emit('code-result', {
+                        result: null,
+                        logs: [],
+                        error: errorMessage,
+                    });
+                }
+            }
+        }
     };
 
     const handleReturnToMenu = () => {
@@ -469,7 +563,15 @@ const InterviewerContent = () => {
                 <div className={styles.codeResultColumn}>
                     <div className={`${styles.contentCard} ${styles.codeCard}`}>
                         <h4>代码区</h4>
-                        <SharedCodeEditor code={code} onCodeChange={handleCodeChange} />
+                        <LanguageSelector 
+                            language={language} 
+                            onLanguageChange={handleLanguageChange}
+                        />
+                        <SharedCodeEditor 
+                            code={code} 
+                            onCodeChange={handleCodeChange} 
+                            language={language}
+                        />
                         {/* 修复了空格问题 */}
                         <button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>
                     </div>

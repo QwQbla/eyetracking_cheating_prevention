@@ -2,6 +2,11 @@
 export const BASE_URL = 'https://eyecheating.deepalgo.cn'; // 替换为实际的 API 基础 URL
 export const BASE_URL1 = 'http://localhost:5000/api';
 
+// 代码执行服务器地址（可以根据环境切换）
+export const CODE_EXECUTION_BASE_URL = process.env.NODE_ENV === 'production'
+    ? process.env.REACT_APP_CODE_EXECUTION_URL || 'http://localhost:3001'
+    : 'http://localhost:3001';
+
 export const API_ENDPOINTS = {
     //登录
     itvlogin: `${BASE_URL}/itv/login-with-captcha`,
@@ -24,7 +29,9 @@ export const API_ENDPOINTS = {
     itvQuery: `${BASE_URL}/itv/QueryById`,
     itvAlert: `${BASE_URL}/itv/AlertById`,
     //眼动数据接口
-    gazeData:`${BASE_URL}/api/static-json/save`
+    gazeData:`${BASE_URL}/api/static-json/save`,
+    //代码执行接口
+    executeCode: `${CODE_EXECUTION_BASE_URL}/api/execute`
 };
 
 // 用户类型枚举

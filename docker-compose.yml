@@ -1,0 +1,16 @@
+# docker-compose.yml
+# 用于开发和测试的 Docker Compose 配置
+
+version: '3.8'
+
+services:
+  code-execution:
+    build:
+      context: .
+      dockerfile: server/docker/Dockerfile.python
+    container_name: code-execution-python
+    # 注意：这个服务主要用于构建镜像，实际执行是通过 docker run 动态创建的容器
+    # 因此这里只做示例配置
+
+  # 如果需要同时运行多个代码执行服务，可以添加更多服务
+

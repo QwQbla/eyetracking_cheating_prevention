@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
   });
 
   // 2. 统一处理所有需要转发的消息
-  const forwardEvents = ['offer', 'answer', 'ice-candidate', 'code-update', 'code-result', 'question-update', 'status-update'];
+  const forwardEvents = ['offer', 'answer', 'ice-candidate', 'code-update', 'code-result', 'question-update', 'language-update', 'status-update'];
   
   forwardEvents.forEach(eventName => {
     socket.on(eventName, (data) => {
