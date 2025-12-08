@@ -17,9 +17,8 @@ function SharedCodeEditor({ code, onCodeChange }) {
           fontSize: '16px',
           fontFamily: 'monospace',
           width: '100%',
-          height: '100%',
           flexGrow: 1, 
-          borderRadius: '8px', 
+          borderRadius: '8px'
         }}
       />
   );
