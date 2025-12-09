@@ -1,21 +1,21 @@
 // src/utils/GazeAnalysis.js
 
 // --- 全局参数配置 ---
-export let GLOBAL_DISPERSION_THRESHOLD = 100; // P1: 离散度:区分眼跳和注视。 [cite: 8]
-export let GLOBAL_MODIFIER_RATE = 0.1; // P3: 阅读置信度的衰减速度 [cite: 8]
-export let GLOBAL_CONFIDENCE_THRESHOLD = 0.75; // P4: 阅读置信度的及格线 (默认值 0.5) [cite: 8]
-export const WINDOW_DURATION_MS = 150; // P2: 时间窗口:算法回顾历史的时长 [cite: 8]
+export let GLOBAL_DISPERSION_THRESHOLD = 100; // P1: 离散度:区分眼跳和注视。
+export let GLOBAL_MODIFIER_RATE = 0.3; // P3: 阅读置信度的衰减速度 
+export let GLOBAL_CONFIDENCE_THRESHOLD = 0.75; // P4: 阅读置信度的及格线 
+export const WINDOW_DURATION_MS = 150; // P2: 时间窗口:算法回顾历史的时长 
 
 // 次要参数 (用于事件过滤和模式匹配)
-export const FIXATION_MIN_DURATION_MS = 80; // P5: 滤除过短的扫视或抖动 [cite: 8]
-export const FIXATION_MAX_DURATION_MS = 800; // P6: 过滤过长的注视 (如发呆、暂停) [cite: 8]
-export const SACCADE_MIN_AMPLITUDE_PX = 50; // P7: 滤除微小的眼动 [cite: 8]
-export const SACCADE_MAX_AMPLITUDE_PX = 500; // P8: 过滤过大的移动 [cite: 8]
+export const FIXATION_MIN_DURATION_MS = 80; // P5: 滤除过短的扫视或抖动 
+export const FIXATION_MAX_DURATION_MS = 800; // P6: 过滤过长的注视 (如发呆、暂停) 
+export const SACCADE_MIN_AMPLITUDE_PX = 50; // P7: 滤除微小的眼动 
+export const SACCADE_MAX_AMPLITUDE_PX = 500; // P8: 过滤过大的移动 
 
 // 奖励值
-export const FORWARD_BONUS = 0.4; // P9: 标准阅读奖励 [cite: 8]
-export const REGRESSION_BONUS = 0.3; // P10: 回读奖励 [cite: 8]
-export const WEAK_MATCH_BONUS = 0.15; // P11: 弱匹配奖励 [cite: 8]
+export const FORWARD_BONUS = 0.4; // P9: 标准阅读奖励 
+export const REGRESSION_BONUS = 0.3; // P10: 回读奖励 
+export const WEAK_MATCH_BONUS = 0.15; // P11: 弱匹配奖励 
 
 // --- L1/L2 辅助函数 ---
 // 计算质心
