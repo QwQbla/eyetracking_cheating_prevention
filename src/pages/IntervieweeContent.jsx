@@ -402,7 +402,7 @@ const IntervieweeContent = () => {
             <div className={styles.sidebar}>
                 <h2>面试者端</h2>
                 <video ref={localVideoRef} autoPlay playsInline muted className={styles.videoPlayer} />
-                {/*<video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />*/}
+                <video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />
 
                 <h4>面试状态</h4>
                 <div className={styles.statusPanel} ref={statusPanelRef}>

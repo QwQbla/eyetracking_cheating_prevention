@@ -68,14 +68,14 @@ const InterviewerContent = () => {
 
     // --- 5. 引用 (Refs) ---
     // DOM 引用
-    // const localVideoRef = useRef(null); // 已注释：不需要面试官本地视频流
+    const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const statusPanelRef = useRef(null);
     // 连接与实例引用
     const pcRef = useRef(null);
     const socketRef = useRef(null);
     const dataChannelRef = useRef(null);
-    // const localStreamRef = useRef(null); // 已注释：不需要面试官本地视频流
+    const localStreamRef = useRef(null); // *关键：保存本地视频流以便清理
     const workerRef = useRef(null);
     // 分析算法状态引用
     const gazeWindowRef = useRef([]);           // L1: I-DT 滑动窗口
@@ -160,12 +160,12 @@ const InterviewerContent = () => {
                         type: 'Fixation', startTime, endTime, duration,
                         centroid
                     };
-                    //console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
+                    console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
                 } else {
                     if (duration < FIXATION_MIN_DURATION_MS) {
-                        //console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
+                        console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
                     } else {
-                        //console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
+                        console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
                     }
                 }
             } else { // SACCADING
@@ -181,12 +181,12 @@ const InterviewerContent = () => {
                         amplitude,
                         direction
                     };
-                    //console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
+                    console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
                 } else {
                     if (amplitude < SACCADE_MIN_AMPLITUDE_PX) {
-                       // console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
+                        console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
                     } else {
-                        //console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
+                        console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
                     }
                 }
             }
@@ -314,11 +314,11 @@ const InterviewerContent = () => {
                 if (socket) socket.disconnect();
             }
             if (pcRef.current) pcRef.current.close();
-            // * 修复：使用 localStreamRef 正确关闭摄像头（已注释：不需要面试官本地视频流）
-            // if (localStreamRef.current) {
-            //     localStreamRef.current.getTracks().forEach(track => track.stop());
-            //     console.log('面试官端摄像头已关闭');
-            // }
+            // * 修复：使用 localStreamRef 正确关闭摄像头
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(track => track.stop());
+                console.log('面试官端摄像头已关闭');
+            }
         };
     }, [roomId]);
 
@@ -362,28 +362,19 @@ const InterviewerContent = () => {
             }
         };
 
-        // 8c. 获取媒体流（已注释：不需要面试官本地视频流）
-        // try {
-        //     const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        //     localStreamRef.current = localStream; // 保存引用
-        //     localVideoRef.current.srcObject = localStream;
-        //     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-        //     const offer = await pc.createOffer();
-        //     await pc.setLocalDescription(offer);
-        //     socketRef.current.emit('offer', pc.localDescription);
-        // } catch (err) {
-        //     console.error("无法获取摄像头:", err);
-        //     alert("无法获取摄像头权限，请检查设备设置。");
-        // }
-        
-        // 创建 offer（不发送本地视频流，仅用于建立连接和数据通道）
+        // 8c. 获取媒体流
         try {
+            const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localStreamRef.current = localStream; // 保存引用
+            localVideoRef.current.srcObject = localStream;
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
             socketRef.current.emit('offer', pc.localDescription);
         } catch (err) {
-            console.error("创建 WebRTC offer 失败:", err);
+            console.error("无法获取摄像头:", err);
+            alert("无法获取摄像头权限，请检查设备设置。");
         }
     };
 
@@ -435,7 +426,7 @@ const InterviewerContent = () => {
             {/* 侧边栏 */}
             <div className={styles.sidebar}>
                 <h2>面试官端</h2>
-                {/*<video ref={localVideoRef} autoPlay playsInline muted className={styles.videoPlayer} />*/}
+                <video ref={localVideoRef} autoPlay playsInline muted className={styles.videoPlayer} />
                 <video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />
                 <button onClick={startCall} className={styles.callButton}>开始面试</button>
 
