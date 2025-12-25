@@ -71,9 +71,9 @@ export class ReadingDetector {
 
       // 返回判断结果 - 使用 GLOBAL_CONFIDENCE_THRESHOLD
       if (this.readingConfidence > GLOBAL_CONFIDENCE_THRESHOLD) {
-          return { status: '阅读 (Reading)', className: 'behaviorReading' };
+          return { status: '疑似阅读', className: 'behaviorReading' };
       } else {
-          return { status: '非阅读 (Browsing)', className: 'behaviorBrowsing' };
+          return { status: '非阅读', className: 'behaviorBrowsing' };
       }
   }
 
@@ -82,7 +82,7 @@ export class ReadingDetector {
       const lastSac = this.eventHistory[this.eventHistory.length - 2];
 
       if (!lastFix || !lastSac || lastSac.type !== 'Saccade') {
-          console.log('[ReadingDetector] 事件序列不符合要求，置信度衰减');
+          // console.log('[ReadingDetector] 事件序列不符合要求，置信度衰减');
           this.decayConfidence(GLOBAL_MODIFIER_RATE);
           return;
       }
@@ -97,19 +97,19 @@ export class ReadingDetector {
       const isForwardAmplitude = lastSac.amplitude >= SACCADE_MIN_AMPLITUDE_PX && lastSac.amplitude <= SACCADE_MAX_AMPLITUDE_PX;
       const isRegressionAmplitude = lastSac.amplitude >= SACCADE_MIN_AMPLITUDE_PX && lastSac.amplitude <= SACCADE_MAX_AMPLITUDE_PX;
 
-      console.log(`[ReadingDetector] 分析模式 - 注视: ${lastFix.duration.toFixed(0)}ms, 眼跳: ${lastSac.amplitude.toFixed(0)}px ${lastSac.direction}`);
+      // console.log(`[ReadingDetector] 分析模式 - 注视: ${lastFix.duration.toFixed(0)}ms, 眼跳: ${lastSac.amplitude.toFixed(0)}px ${lastSac.direction}`);
 
       if (rule1_Duration && isRightward && isForwardAmplitude) {
-          console.log(`[ReadingDetector] ✅ 检测到前向阅读模式 (+${FORWARD_BONUS})`);
+          // console.log(`[ReadingDetector] ✅ 检测到前向阅读模式 (+${FORWARD_BONUS})`);
           this.increaseConfidence(FORWARD_BONUS); // 前向阅读信号
       } else if (rule1_Duration && isLeftward && isRegressionAmplitude) {
-          console.log(`[ReadingDetector] ✅ 检测到回读模式 (+${REGRESSION_BONUS})`);
+          // console.log(`[ReadingDetector] ✅ 检测到回读模式 (+${REGRESSION_BONUS})`);
           this.increaseConfidence(REGRESSION_BONUS);  // 回读信号
       } else if (isRightward && isForwardAmplitude) {
-          console.log(`[ReadingDetector] ⚠️ 检测到弱阅读信号 (+${WEAK_MATCH_BONUS})`);
+          // console.log(`[ReadingDetector] ⚠️ 检测到弱阅读信号 (+${WEAK_MATCH_BONUS})`);
           this.increaseConfidence(WEAK_MATCH_BONUS);  // 弱信号
       } else {
-          console.log('[ReadingDetector] ❌ 未检测到阅读模式');
+          // console.log('[ReadingDetector] ❌ 未检测到阅读模式');
       }
   }
 

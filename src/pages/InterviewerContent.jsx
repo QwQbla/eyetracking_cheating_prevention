@@ -109,9 +109,9 @@ const InterviewerContent = () => {
              const dispersion = (maxX - minX) + (maxY - minY);
              if (dispersion <= GLOBAL_DISPERSION_THRESHOLD) {
                  instantClassification = 'Fixation'; // 离散度低，判定为注视
-                 console.log(`[I-DT] 检测到注视 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
+                 // console.log(`[I-DT] 检测到注视 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
              } else {
-                 console.log(`[I-DT] 检测到眼跳 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
+                 // console.log(`[I-DT] 检测到眼跳 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
              }
         }
 
@@ -123,7 +123,7 @@ const InterviewerContent = () => {
             currentEvent.state = newState;
             currentEvent.startTime = t;
             currentEvent.points.push(point);
-            console.log(`[状态机] 初始状态: ${newState}`);
+            // console.log(`[状态机] 初始状态: ${newState}`);
             return;
         }
 
@@ -138,9 +138,9 @@ const InterviewerContent = () => {
 
         // 状态改变或超时，打印日志
         if (shouldForceSubmit) {
-            console.log(`[状态机] 状态超时强制提交: ${currentEvent.state}, 持续时间: ${eventDuration.toFixed(0)}ms`);
+            // console.log(`[状态机] 状态超时强制提交: ${currentEvent.state}, 持续时间: ${eventDuration.toFixed(0)}ms`);
         } else {
-            console.log(`[状态机] 状态切换: ${currentEvent.state} -> ${newState}`);
+            // console.log(`[状态机] 状态切换: ${currentEvent.state} -> ${newState}`);
         }
 
         // --- 状态改变！提交上一个事件到 L2 ---
@@ -160,12 +160,12 @@ const InterviewerContent = () => {
                         type: 'Fixation', startTime, endTime, duration,
                         centroid
                     };
-                    console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
+                    // console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
                 } else {
                     if (duration < FIXATION_MIN_DURATION_MS) {
-                        console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
+                        // console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
                     } else {
-                        console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
+                        // console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
                     }
                 }
             } else { // SACCADING
@@ -181,12 +181,12 @@ const InterviewerContent = () => {
                         amplitude,
                         direction
                     };
-                    console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
+                    // console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
                 } else {
                     if (amplitude < SACCADE_MIN_AMPLITUDE_PX) {
-                        console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
+                        // console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
                     } else {
-                        console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
+                        // console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
                     }
                 }
             }
@@ -195,7 +195,7 @@ const InterviewerContent = () => {
             if (eventObject) {
                 // 将事件交给检测器，获取高级状态
                 const result = readingDetectorRef.current.addEvent(eventObject);
-                console.log(`[行为分析] 当前状态: ${result.status}, 置信度: ${readingDetectorRef.current.readingConfidence.toFixed(3)}`);
+                // console.log(`[行为分析] 当前状态: ${result.status}, 置信度: ${readingDetectorRef.current.readingConfidence.toFixed(3)}`);
                 // 更新 UI 状态
                 setIntervieweeBehavior(result.status);
                 setBehaviorClass(result.className);
@@ -504,7 +504,6 @@ const InterviewerContent = () => {
                     <div className={`${styles.contentCard} ${styles.codeCard}`}>
                         <h4>代码区</h4>
                         <SharedCodeEditor code={code} onCodeChange={handleCodeChange} />
-                        {/* 修复了空格问题 */}
                         {/*<button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>*/}
                     </div>
                     {/*<div className={`${styles.contentCard} ${styles.resultCard}`}>
