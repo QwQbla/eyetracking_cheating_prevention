@@ -2,7 +2,7 @@
 
 // --- 全局参数配置 ---
 export let GLOBAL_DISPERSION_THRESHOLD = 100; // P1: 离散度:区分眼跳和注视。
-export let GLOBAL_MODIFIER_RATE = 0.3; // P3: 阅读置信度的衰减速度 
+export let GLOBAL_MODIFIER_RATE = 0.15; // P3: 阅读置信度的衰减速度 
 export let GLOBAL_CONFIDENCE_THRESHOLD = 0.75; // P4: 阅读置信度的及格线 
 export const WINDOW_DURATION_MS = 150; // P2: 时间窗口:算法回顾历史的时长 
 

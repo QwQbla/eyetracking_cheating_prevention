@@ -86,6 +86,59 @@ const InterviewerContent = () => {
     });
     const readingDetectorRef = useRef(new ReadingDetector()); // L2: 模式识别器实例
 
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const chunksRef = useRef([]);
+    
+    const handleStartRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                video: { mediaSource: "screen" },
+                audio: true 
+            });
+
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            chunksRef.current = [];
+
+            // --- 关键点：记录点击开始录制时的绝对时间戳 ---
+            // 这一刻不仅是视频的 00:00，也是这个时间戳
+            const startTimeAnchor = Date.now(); 
+            console.log("录制开始基准时间:", startTimeAnchor); 
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) chunksRef.current.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // --- 关键点：将时间戳放入文件名 ---
+                // 文件名示例: record_ROOM123_1735198888888.webm
+                a.download = `record_${roomId}_${startTimeAnchor}.webm`; 
+                
+                a.click();
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (err) {
+            console.error("无法启动录制:", err);
+        }
+    };
+
+    const handleStopRecording = () => {
+        if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+            // 停止屏幕共享流的轨道
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+            setIsRecording(false);
+        }
+    };
+
     // --- 6. 核心分析逻辑 (L1 + L2) ---
     const processGazeData = useCallback((x, y, t) => {
         const point = { x, y, timestamp: t };
@@ -346,7 +399,13 @@ const InterviewerContent = () => {
             if (msg.type === 'gaze') {
                 const { x, y, t } = msg.content;
                 // 1. 渲染红点（仅在开关开启时更新可见性）
-                setGazePoint({ x, y, visible: true });
+                const currentWidth = window.innerWidth;
+                const currentHeight = window.innerHeight;
+
+                const absoluteX = x * currentWidth;
+                const absoluteY = y * currentHeight;
+
+                setGazePoint({ x: absoluteX, y: absoluteY, visible: true });
                 // 2. 驱动 L1/L2 分析流程
                 processGazeData(x, y, t);
             }
@@ -429,6 +488,17 @@ const InterviewerContent = () => {
                 <video ref={localVideoRef} autoPlay playsInline muted className={styles.videoPlayer} />
                 <video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />
                 <button onClick={startCall} className={styles.callButton}>开始面试</button>
+                
+                    {!isRecording ? (
+                        <button onClick={handleStartRecording} className={styles.callButton} >
+                             开始录屏
+                        </button>
+                    ) : (
+                        <button onClick={handleStopRecording} className={styles.button} >
+                             停止录屏
+                        </button>
+                    )}
+                
 
                 {/* 控制开关区域 */}
                 <h4>控制开关状态</h4>

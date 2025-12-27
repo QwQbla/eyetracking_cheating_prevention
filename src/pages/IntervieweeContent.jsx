@@ -166,16 +166,23 @@ const IntervieweeContent = () => {
         webgazer.setGazeListener((data) => { // 修正: _elapsedTime
             if (data == null) return;
 
+            // 获取当前窗口宽高
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            // 发送百分比 (保留几位小数以减小数据包体积)
+            const xPercent = data.x / w;
+            const yPercent = data.y / h;
             // 2a-1. 推入缓冲区，用于后端5秒上报
             gazeDataBuffer.current.push({
-                x: data.x,
-                y: data.y,
+                x: xPercent, // 发送 0.5 代表中间
+                y: yPercent,
                 timestamp: Date.now()
             });
 
             // 2a-2. 通过 P2P DataChannel 实时发送给面试官
             if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
-                const dataToSend = { type: 'gaze', content: { x: data.x, y: data.y, t: Date.now() } };
+                const dataToSend = { type: 'gaze', content: { x: xPercent, y: yPercent, t: Date.now() } };
                 dataChannelRef.current.send(JSON.stringify(dataToSend));
             }
         });
