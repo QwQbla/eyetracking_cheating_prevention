@@ -6,6 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 // 核心库
 import { io } from 'socket.io-client';
+import swal from 'sweetalert';
 
 // 相关组件与工具
 import SharedCodeEditor from '../components/SharedCodeEditor';
@@ -415,6 +416,17 @@ const InterviewerContent = () => {
         }, 100);
     };
 
+    // 开始录制按钮处理函数
+    const handleStartRecording = () => {
+        const timestamp = Date.now();
+        swal({
+            title: "开始录制",
+            text: `当前时间戳: ${timestamp}`,
+            icon: "info",
+            button: "确定"
+        });
+    };
+
     // --- 9. 渲染 (JSX) ---
     return (
         <div className={styles.pageContainer}>
@@ -432,6 +444,7 @@ const InterviewerContent = () => {
                 <video ref={localVideoRef} autoPlay playsInline muted className={styles.videoPlayer} />
                 <video ref={remoteVideoRef} autoPlay playsInline className={styles.videoPlayer} />
                 <button onClick={startCall} className={styles.callButton}>开始面试</button>
+                <button onClick={handleStartRecording} className={styles.button} style={{ marginTop: '10px' }}>开始录制</button>
 
                 {/* 控制开关区域 */}
                 <h4>控制开关状态</h4>
