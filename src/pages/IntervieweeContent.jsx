@@ -166,16 +166,27 @@ const IntervieweeContent = () => {
         webgazer.setGazeListener((data) => { // 修正: _elapsedTime
             if (data == null) return;
 
-            // 2a-1. 推入缓冲区，用于后端5秒上报
+            // 将绝对坐标转换为归一化坐标（相对比例，0-1之间）
+            const normalizedX = data.x / window.innerWidth;
+            const normalizedY = data.y / window.innerHeight;
+
+            // 2a-1. 推入缓冲区，用于后端5秒上报（存储归一化坐标）
             gazeDataBuffer.current.push({
-                x: data.x,
-                y: data.y,
+                x: normalizedX,
+                y: normalizedY,
                 timestamp: Date.now()
             });
 
-            // 2a-2. 通过 P2P DataChannel 实时发送给面试官
+            // 2a-2. 通过 P2P DataChannel 实时发送给面试官（发送归一化坐标）
             if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
-                const dataToSend = { type: 'gaze', content: { x: data.x, y: data.y, t: Date.now() } };
+                const dataToSend = { 
+                    type: 'gaze', 
+                    content: { 
+                        x: normalizedX, 
+                        y: normalizedY, 
+                        t: Date.now() 
+                    } 
+                };
                 dataChannelRef.current.send(JSON.stringify(dataToSend));
             }
         });

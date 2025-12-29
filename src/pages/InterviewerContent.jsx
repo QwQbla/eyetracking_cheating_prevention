@@ -344,11 +344,14 @@ const InterviewerContent = () => {
             const msg = JSON.parse(event.data);
             // 确保只处理 'gaze' 类型的原始数据
             if (msg.type === 'gaze') {
-                const { x, y, t } = msg.content;
+                const { x: normalizedX, y: normalizedY, t } = msg.content;
+                // 将归一化坐标转换回绝对坐标（根据接收端的窗口大小）
+                const absoluteX = normalizedX * window.innerWidth;
+                const absoluteY = normalizedY * window.innerHeight;
                 // 1. 渲染红点（仅在开关开启时更新可见性）
-                setGazePoint({ x, y, visible: true });
+                setGazePoint({ x: absoluteX, y: absoluteY, visible: true });
                 // 2. 驱动 L1/L2 分析流程
-                processGazeData(x, y, t);
+                processGazeData(absoluteX, absoluteY, t);
             }
         };
 
