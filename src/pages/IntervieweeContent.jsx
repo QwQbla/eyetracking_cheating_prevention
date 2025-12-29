@@ -42,7 +42,7 @@ const IntervieweeContent = () => {
         const savedQuestion = sessionStorage.getItem(`interview_question_${roomId}`);
         return savedQuestion !== null ? savedQuestion : '请等待面试官发布题目...';
     });
-    const [executionResult, setExecutionResult] = useState(''); // 代码执行结果
+    //const [executionResult, setExecutionResult] = useState(''); // 代码执行结果
     const [statusLog, setStatusLog] = useState([]); // 面试状态日志
     const [isInterviewOver, setIsInterviewOver] = useState(false); // 标记面试是否已由后端结束
 
@@ -144,11 +144,11 @@ const IntervieweeContent = () => {
     useEffect(() => {
         workerRef.current = new Worker('/coderunner.js');
         workerRef.current.onmessage = (event) => {
-            const resultString = JSON.stringify(event.data, null, 2);
+            //const resultString = JSON.stringify(event.data, null, 2);
             if (socketRef.current) {
                 socketRef.current.emit('code-result', event.data);
             }
-            setExecutionResult(resultString);
+            //setExecutionResult(resultString);
         };
         return () => {
             if (workerRef.current) workerRef.current.terminate();
@@ -284,9 +284,9 @@ const IntervieweeContent = () => {
             sessionStorage.setItem(`interview_code_${roomId}`, newCode);
         });
 
-        socket.on('code-result', (result) => {
+        /*socket.on('code-result', (result) => {
             setExecutionResult(JSON.stringify(result, null, 2));
-        });
+        });*/
 
         socket.on('question-update', (receivedQuestion) => {
             setQuestion(receivedQuestion);
@@ -380,12 +380,12 @@ const IntervieweeContent = () => {
     };
 
     // 运行代码
-    const runCode = () => {
+    /*const runCode = () => {
         if (workerRef.current) {
             setExecutionResult('正在执行代码...');
             workerRef.current.postMessage({ code });
         }
-    };
+    };*/
     
     // 代码编辑器内容改变
     const handleCodeChange = (newCode) => {
@@ -443,16 +443,10 @@ const IntervieweeContent = () => {
                         <h4>代码区</h4>
                         <SharedCodeEditor code={code} onCodeChange={handleCodeChange} />
                         {/* 修正: onClick 和 className 之间添加空格 */}
-                        <button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>
+                        {/*<button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>*/}
                     </div>
 
-                    {/* 结果卡片 */}
-                    <div className={`${styles.contentCard} ${styles.resultCard}`}>
-                        <h4>执行结果</h4>
-                        <pre className={styles.resultBox}>
-                            {executionResult}
-                        </pre>
-                    </div>
+
                 </div>
             </div>
         </div>

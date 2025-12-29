@@ -55,7 +55,7 @@ const InterviewerContent = () => {
         const savedQuestion = sessionStorage.getItem(`interview_question_${roomId}`);
         return savedQuestion !== null ? savedQuestion : '请在此输入面试题目...';
     });
-    const [executionResult, setExecutionResult] = useState('');
+    //const [executionResult, setExecutionResult] = useState('');
     // 面试状态日志
     const [statusLog, setStatusLog] = useState([]);
     // 应聘者实时数据展示
@@ -222,11 +222,11 @@ const InterviewerContent = () => {
     useEffect(() => {
         workerRef.current = new Worker('/coderunner.js');
         workerRef.current.onmessage = (event) => {
-            const resultString = JSON.stringify(event.data, null, 2);
+            //const resultString = JSON.stringify(event.data, null, 2);
             if (socketRef.current) {
                 socketRef.current.emit('code-result', event.data);
             }
-            setExecutionResult(resultString);
+            //setExecutionResult(resultString);
         };
         return () => workerRef.current.terminate();
     }, []);
@@ -288,9 +288,9 @@ const InterviewerContent = () => {
             setCode(newCode);
             sessionStorage.setItem(`interview_code_${roomId}`, newCode);
         });
-        socket.on('code-result', (result) => {
-            setExecutionResult(JSON.stringify(result, null, 2));
-        });
+        /*socket.on('code-result', (result) => {
+            //setExecutionResult(JSON.stringify(result, null, 2));
+        });*/
         socket.on('question-update', (newQuestion) => { 
              setQuestion(newQuestion);
              sessionStorage.setItem(`interview_question_${roomId}`, newQuestion);
@@ -391,10 +391,10 @@ const InterviewerContent = () => {
         socketRef.current?.emit('question-update', newQuestion);
     };
 
-    const runCode = () => {
-        setExecutionResult('正在执行代码...');
+    /*const runCode = () => {
+        //setExecutionResult('正在执行代码...');
         workerRef.current?.postMessage({ code });
-    };
+    };*/
 
     const handleReturnToMenu = () => {
         // 发送离开房间的状态更新
@@ -505,12 +505,9 @@ const InterviewerContent = () => {
                         <h4>代码区</h4>
                         <SharedCodeEditor code={code} onCodeChange={handleCodeChange} />
                         {/* 修复了空格问题 */}
-                        <button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>
+                        {/*<button onClick={runCode} className={`${styles.button} ${styles.runButton}`}>运行代码</button>*/}
                     </div>
-                    <div className={`${styles.contentCard} ${styles.resultCard}`}>
-                        <h4>执行结果</h4>
-                        <pre className={styles.resultBox}>{executionResult}</pre>
-                    </div>
+
                 </div>
             </div>
         </div>
