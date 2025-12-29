@@ -188,7 +188,7 @@
   height: 20px;
   background-color: rgba(255, 0, 0, 0.4); /* 半透明红色 */
   border-radius: 50%;
-  position: absolute; /* 确保 style 中的 left/top 生效 */
+  position: fixed; /* 使用 fixed 定位，相对于视口，不会触发页面滚动 */
   z-index: 1000; /* 确保它在最上层 */
   transition: left 0.05s linear, top 0.05s linear; /* 让移动更平滑 */
   pointer-events: none; /* 确保它不会捕获鼠标事件，不影响用户操作 */
