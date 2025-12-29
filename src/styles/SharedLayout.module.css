@@ -186,7 +186,7 @@
 .gazeDot {
   width: 20px;
   height: 20px;
-  background-color: rgba(255, 0, 0, 0.5); /* 半透明红色 */
+  background-color: rgba(255, 0, 0, 0.4); /* 半透明红色 */
   border-radius: 50%;
   position: absolute; /* 确保 style 中的 left/top 生效 */
   z-index: 1000; /* 确保它在最上层 */

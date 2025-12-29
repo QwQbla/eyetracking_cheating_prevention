@@ -109,9 +109,9 @@ const InterviewerContent = () => {
              const dispersion = (maxX - minX) + (maxY - minY);
              if (dispersion <= GLOBAL_DISPERSION_THRESHOLD) {
                  instantClassification = 'Fixation'; // 离散度低，判定为注视
-                 console.log(`[I-DT] 检测到注视 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
+                 // console.log(`[I-DT] 检测到注视 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
              } else {
-                 console.log(`[I-DT] 检测到眼跳 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
+                 // console.log(`[I-DT] 检测到眼跳 - 窗口点数: ${gazeWindow.length}, 离散度: ${dispersion.toFixed(2)}`);
              }
         }
 
@@ -123,7 +123,7 @@ const InterviewerContent = () => {
             currentEvent.state = newState;
             currentEvent.startTime = t;
             currentEvent.points.push(point);
-            console.log(`[状态机] 初始状态: ${newState}`);
+            // console.log(`[状态机] 初始状态: ${newState}`);
             return;
         }
 
@@ -138,9 +138,9 @@ const InterviewerContent = () => {
 
         // 状态改变或超时，打印日志
         if (shouldForceSubmit) {
-            console.log(`[状态机] 状态超时强制提交: ${currentEvent.state}, 持续时间: ${eventDuration.toFixed(0)}ms`);
+            // console.log(`[状态机] 状态超时强制提交: ${currentEvent.state}, 持续时间: ${eventDuration.toFixed(0)}ms`);
         } else {
-            console.log(`[状态机] 状态切换: ${currentEvent.state} -> ${newState}`);
+            // console.log(`[状态机] 状态切换: ${currentEvent.state} -> ${newState}`);
         }
 
         // --- 状态改变！提交上一个事件到 L2 ---
@@ -160,12 +160,12 @@ const InterviewerContent = () => {
                         type: 'Fixation', startTime, endTime, duration,
                         centroid
                     };
-                    console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
+                    // console.log(`[事件] 注视完成 - 时长: ${duration.toFixed(0)}ms, 中心: (${centroid.x.toFixed(0)}, ${centroid.y.toFixed(0)})`);
                 } else {
                     if (duration < FIXATION_MIN_DURATION_MS) {
-                        console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
+                        // console.log(`[事件] 注视太短被忽略 - 时长: ${duration.toFixed(0)}ms (最小: ${FIXATION_MIN_DURATION_MS}ms)`);
                     } else {
-                        console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
+                        // console.log(`[事件] 注视太长被忽略 - 时长: ${duration.toFixed(0)}ms (最大: ${FIXATION_MAX_DURATION_MS}ms)`);
                     }
                 }
             } else { // SACCADING
@@ -181,12 +181,12 @@ const InterviewerContent = () => {
                         amplitude,
                         direction
                     };
-                    console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
+                    // console.log(`[事件] 眼跳完成 - 时长: ${duration.toFixed(0)}ms, 幅度: ${amplitude.toFixed(0)}px, 方向: ${direction}`);
                 } else {
                     if (amplitude < SACCADE_MIN_AMPLITUDE_PX) {
-                        console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
+                        // console.log(`[事件] 眼跳太小被忽略 - 幅度: ${amplitude.toFixed(0)}px (最小: ${SACCADE_MIN_AMPLITUDE_PX}px)`);
                     } else {
-                        console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
+                        // console.log(`[事件] 眼跳太大被忽略 - 幅度: ${amplitude.toFixed(0)}px (最大: ${SACCADE_MAX_AMPLITUDE_PX}px)`);
                     }
                 }
             }
@@ -195,7 +195,7 @@ const InterviewerContent = () => {
             if (eventObject) {
                 // 将事件交给检测器，获取高级状态
                 const result = readingDetectorRef.current.addEvent(eventObject);
-                console.log(`[行为分析] 当前状态: ${result.status}, 置信度: ${readingDetectorRef.current.readingConfidence.toFixed(3)}`);
+                // console.log(`[行为分析] 当前状态: ${result.status}, 置信度: ${readingDetectorRef.current.readingConfidence.toFixed(3)}`);
                 // 更新 UI 状态
                 setIntervieweeBehavior(result.status);
                 setBehaviorClass(result.className);
@@ -254,11 +254,11 @@ const InterviewerContent = () => {
 
         // 监听服务器转发的状态更新
         socket.on('status-update', (data) => {
-            console.log('收到状态更新:', data.message);
+            // console.log('收到状态更新:', data.message);
             setStatusLog(prevLog => [...prevLog, { ...data, id: Date.now() }]);
 
             if (data.message && data.message.includes('应聘者已进入房间')) {
-                console.log('检测到应聘者进入，面试官发送存在反馈...');
+                // console.log('检测到应聘者进入，面试官发送存在反馈...');
                 setTimeout(() => {
                     const feedbackStatus = {
                         id: Date.now(),
@@ -317,7 +317,7 @@ const InterviewerContent = () => {
             // * 修复：使用 localStreamRef 正确关闭摄像头
             if (localStreamRef.current) {
                 localStreamRef.current.getTracks().forEach(track => track.stop());
-                console.log('面试官端摄像头已关闭');
+                // console.log('面试官端摄像头已关闭');
             }
         };
     }, [roomId]);
@@ -332,14 +332,14 @@ const InterviewerContent = () => {
     // --- 8. 事件处理器 ---
 
     const startCall = async () => {
-        console.log('面试官：开始呼叫流程...');
+        // console.log('面试官：开始呼叫流程...');
         const pc = new RTCPeerConnection(configuration);
         pcRef.current = pc;
 
         // 8a. 创建 DataChannel (用于接收眼动数据)
         const dataChannel = pc.createDataChannel("shared-data"); // 建议统一命名
         dataChannelRef.current = dataChannel;
-        dataChannel.onopen = () => console.log("面试官：数据通道已开启!");
+        dataChannel.onopen = () => {console.log("面试官：数据通道已开启!");};
         dataChannel.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             // 确保只处理 'gaze' 类型的原始数据
