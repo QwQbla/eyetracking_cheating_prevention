@@ -2,8 +2,8 @@
 
 // --- 全局参数配置 ---
 export let GLOBAL_DISPERSION_THRESHOLD = 100; // P1: 离散度:区分眼跳和注视。
-export let GLOBAL_MODIFIER_RATE = 0.3; // P3: 阅读置信度的衰减速度 
-export let GLOBAL_CONFIDENCE_THRESHOLD = 0.75; // P4: 阅读置信度的及格线 
+export let GLOBAL_MODIFIER_RATE = 0.15; // P3: 阅读置信度的衰减速度 
+export let GLOBAL_CONFIDENCE_THRESHOLD = 0.55; // P4: 阅读置信度的及格线 
 export const WINDOW_DURATION_MS = 150; // P2: 时间窗口:算法回顾历史的时长 
 
 // 次要参数 (用于事件过滤和模式匹配)
@@ -71,9 +71,9 @@ export class ReadingDetector {
 
       // 返回判断结果 - 使用 GLOBAL_CONFIDENCE_THRESHOLD
       if (this.readingConfidence > GLOBAL_CONFIDENCE_THRESHOLD) {
-          return { status: '阅读 (Reading)', className: 'behaviorReading' };
+          return { status: '疑似阅读', className: 'behaviorReading' };
       } else {
-          return { status: '非阅读 (Browsing)', className: 'behaviorBrowsing' };
+          return { status: '非阅读', className: 'behaviorBrowsing' };
       }
   }
 
