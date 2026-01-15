@@ -34,7 +34,7 @@ export const WebgazerProvider = ({ children }) => {
       }
 
       webgazer.setRegression('weightedRidge');
-      webgazer.setTracker('clmtrackr');
+      webgazer.setTracker('TFFacemesh');
       webgazer.saveDataAcrossSessions(true);
       webgazer.applyKalmanFilter(true);
 

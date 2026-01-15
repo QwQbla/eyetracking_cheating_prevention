@@ -1,16 +1,16 @@
 // src/utils/GazeAnalysis.js
 
 // --- 全局参数配置 ---
-export let GLOBAL_DISPERSION_THRESHOLD = 100; // P1: 离散度:区分眼跳和注视。
-export let GLOBAL_MODIFIER_RATE = 0.15; // P3: 阅读置信度的衰减速度 
+export let GLOBAL_DISPERSION_THRESHOLD = 150; // P1: 离散度:区分眼跳和注视。
+export let GLOBAL_MODIFIER_RATE = 0.08; // P3: 阅读置信度的衰减速度 
 export let GLOBAL_CONFIDENCE_THRESHOLD = 0.55; // P4: 阅读置信度的及格线 
 export const WINDOW_DURATION_MS = 150; // P2: 时间窗口:算法回顾历史的时长 
 
 // 次要参数 (用于事件过滤和模式匹配)
-export const FIXATION_MIN_DURATION_MS = 80; // P5: 滤除过短的扫视或抖动 
-export const FIXATION_MAX_DURATION_MS = 800; // P6: 过滤过长的注视 (如发呆、暂停) 
-export const SACCADE_MIN_AMPLITUDE_PX = 50; // P7: 滤除微小的眼动 
-export const SACCADE_MAX_AMPLITUDE_PX = 500; // P8: 过滤过大的移动 
+export const FIXATION_MIN_DURATION_MS = 5; // P5: 滤除过短的扫视或抖动 
+export const FIXATION_MAX_DURATION_MS = 10000; // P6: 过滤过长的注视 (如发呆、暂停) 
+export const SACCADE_MIN_AMPLITUDE_PX = 5; // P7: 滤除微小的眼动 
+export const SACCADE_MAX_AMPLITUDE_PX = 2000; // P8: 过滤过大的移动 
 
 // 奖励值
 export const FORWARD_BONUS = 0.4; // P9: 标准阅读奖励 
@@ -56,6 +56,18 @@ export class ReadingDetector {
       this.eventHistory = [];
       this.MAX_HISTORY = 20;
       this.readingConfidence = 0.0;
+    // --- 定时衰减器 ---
+    // 每 500ms (0.5秒) 触发一次衰减
+      this.decayTimer = setInterval(() => {
+            // 获取当前的衰减力度 (全局变量)
+            const decayRate = typeof GLOBAL_MODIFIER_RATE !== 'undefined' ? GLOBAL_MODIFIER_RATE : 0.1;
+
+            this.decayConfidence(decayRate ); 
+
+      }, 500); 
+  }
+  destroy() {//清除定时器
+        if (this.decayTimer) clearInterval(this.decayTimer);
   }
 
   addEvent(event) {
@@ -82,13 +94,13 @@ export class ReadingDetector {
       const lastSac = this.eventHistory[this.eventHistory.length - 2];
 
       if (!lastFix || !lastSac || lastSac.type !== 'Saccade') {
-          console.log('[ReadingDetector] 事件序列不符合要求，置信度衰减');
-          this.decayConfidence(GLOBAL_MODIFIER_RATE);
+           // 数据不全，什么都不做，等待定时器自然衰减
+          //this.decayConfidence(GLOBAL_MODIFIER_RATE);
           return;
       }
 
       // 使用 GLOBAL_MODIFIER_RATE 作为基础衰减
-      this.decayConfidence(GLOBAL_MODIFIER_RATE);
+      //this.decayConfidence(GLOBAL_MODIFIER_RATE);
 
       // 使用参数化的规则判断
       const rule1_Duration = lastFix.duration >= FIXATION_MIN_DURATION_MS && lastFix.duration <= FIXATION_MAX_DURATION_MS;
