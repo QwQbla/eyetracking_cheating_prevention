@@ -197,8 +197,10 @@ const InterviewerContent = () => {
                 // 将事件交给检测器，获取高级状态
                 const result = readingDetectorRef.current.addEvent(eventObject);
                 // console.log(`[行为分析] 当前状态: ${result.status}, 置信度: ${readingDetectorRef.current.readingConfidence.toFixed(3)}`);
-                // 更新 UI 状态
-                setIntervieweeBehavior(result.status);
+                // 更新 UI 状态 - 显示置信度分数（百分比格式）
+                const confidence = readingDetectorRef.current.readingConfidence;
+                const confidencePercent = (confidence * 100).toFixed(1);
+                setIntervieweeBehavior(`阅读置信度: ${confidencePercent}%`);
                 setBehaviorClass(result.className);
             }
         }
