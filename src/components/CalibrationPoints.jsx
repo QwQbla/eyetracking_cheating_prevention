@@ -33,8 +33,8 @@ function CalibrationPoints({ show, onClick, activePointId }) {
               backgroundColor: 'blue',
               opacity: '1',
             }}
-            // onClick 事件直接传递给父组件的处理器。
-            onClick={(e) => onClick(e.target)}
+            // onClick 事件直接传递给父组件的处理器，传递完整事件对象以获取坐标。
+            onClick={(e) => onClick(e)}
           />
         );
       })}

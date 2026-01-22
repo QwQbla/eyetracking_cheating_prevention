@@ -9,7 +9,7 @@ import '../styles/HelpModal.css'; // 样式可以继续沿用
 function HelpModal({ show, onHide, onCalibrateClick }) {
 
 
-  console.log('子组件接收到的 prop - show:', show);
+  //console.log('子组件接收到的 prop - show:', show);
   const handleCalibrateClick = () => {
     //console.log("1. '开始校准' 按钮被点击 (在 HelpModal 中)"); 
     //console.log("2. 准备调用 onHide 来关闭窗口..."); 

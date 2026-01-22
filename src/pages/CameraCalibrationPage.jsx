@@ -11,7 +11,10 @@ import '../styles/IntervieweeContent.css';
 // --- 组件 ----
 import CalibrationPoints from '../components/CalibrationPoints';
 import HelpModal from '../components/HelpModal';
-import { useWebgazer } from '../hooks/useWebgazer'; 
+import { useWebgazer } from '../hooks/useWebgazer';
+// --- API ----
+import { API_ENDPOINTS } from '../api';
+
 
 // --- 用于校准序列的常量 ---
 // 定义校准点的顺时针顺序，不包括中心点。
@@ -26,6 +29,7 @@ const TOTAL_STEPS = CALIBRATION_SEQUENCE.length * TOTAL_CYCLES;
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // 计算眼动追踪器的预测准确性
 function calculatePrecision(past50Array) {
+    if (!past50Array || past50Array.length === 0) return 0;
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
     const x50 = past50Array[0];
@@ -77,6 +81,8 @@ function CameraCalibrationPage() {
     // --- Refs 定义 ---
     const plottingCanvasRef = useRef(null);
     //const helpModalRef = useRef(null);
+    const calibrationClickDataRef = useRef([]); // 用于收集校准点击数据
+
     // --- 辅助函数 ---
     useEffect(() => {
       // 只有在 WebGazer 未准备好时才进行初始化
@@ -96,6 +102,7 @@ function CameraCalibrationPage() {
         setCalibrationStep(0);
         setActivePointId(CALIBRATION_SEQUENCE[0]);
         setAccuracy(null);
+        calibrationClickDataRef.current = []; // 清空校准点击数据
     }, []);
 
     const ShowCalibrationPoint = useCallback(() => {
@@ -154,8 +161,32 @@ function CameraCalibrationPage() {
                     cancel: precision_measurement > 60 ? false : "重新校准",
                     confirm: true
                 }
-            }).then(isConfirm => {
+            }).then(async (isConfirm) => {
                 if (precision_measurement > 60 && isConfirm) {
+                    // 校准成功，上传校准点击数据
+                    if (calibrationClickDataRef.current.length > 0) {
+                        try {
+                            const response = await fetch(API_ENDPOINTS.gazeData, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    fjh: roomId, // 房间号 (fjh)
+                                    time: new Date().toISOString(),
+                                    zuobiao: calibrationClickDataRef.current
+                                })
+                            });
+
+                            if (!response.ok) {
+                                console.error('发送校准点击数据失败:', response.statusText);
+                            } else {
+                                const result = await response.json();
+                                console.log('校准点击数据上传成功:', result);
+                            }
+                        } catch (error) {
+                            console.error('网络错误，发送校准点击数据失败:', error);
+                        }
+                    }
+
                     setShowCalibrationButtons(false);
                     setActivePointId(null);
                     ClearCanvas();
@@ -182,12 +213,24 @@ function CameraCalibrationPage() {
 
 
     // --- 处理校准点点击事件的逻辑 ---
-    const handleCalPointClick = useCallback((node) => {
-        const clickedId = node.id;
+    const handleCalPointClick = useCallback((e) => {
+        const clickedId = e.target.id;
 
         if (clickedId !== activePointId) {
             return;
         }
+
+        // 收集点击数据：将 clientX/clientY 转换为归一化坐标 (0.0 - 1.0)
+        const normalizedX = e.clientX / window.innerWidth;
+        const normalizedY = e.clientY / window.innerHeight;
+        const timestamp = Date.now();
+
+        calibrationClickDataRef.current.push({
+            x: normalizedX,
+            y: normalizedY,
+            timestamp: timestamp,
+            dataType: 'calibration_click'
+        });
 
         if (clickedId === 'Pt5') {
             //console.log("最终校准点 ('Pt5') 被点击。");
@@ -212,10 +255,10 @@ function CameraCalibrationPage() {
 
 
     const handleStartCalibration = useCallback(() => {
-        //console.log("4. handleStartCalibration 函数被成功调用 (在父组件中)"); // <-- 新增日志
+        //console.log("4. handleStartCalibration 函数被成功调用 (在父组件中)"); 
         webgazer.clearData();
         ClearCalibration();
-        ShowCalibrationPoint(); // <--- 直接显示校准点
+        ShowCalibrationPoint();
       }, [ClearCalibration, ShowCalibrationPoint]);
 
 

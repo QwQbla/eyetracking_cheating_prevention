@@ -351,7 +351,7 @@ const IntervieweeContent = () => {
                 const dataToSend = [...gazeDataBuffer.current];
                 gazeDataBuffer.current = [];
 
-                console.log(`打包 ${dataToSend.length} 条眼动数据并发送给后端...`);
+                //console.log(`打包 ${dataToSend.length} 条眼动数据并发送给后端...`);
 
                 try {
                     const response = await fetch(API_ENDPOINTS.gazeData, {
@@ -368,7 +368,7 @@ const IntervieweeContent = () => {
                         console.error('发送眼动数据失败:', response.statusText);
                     } else {
                         const result = await response.json();
-                        console.log('后端状态:', result.zt);
+                        //console.log('后端状态:', result.zt);
                         if (result.zt === "已完成" || result.zt === "已过期") {
                             handleInterviewEnd(); // 触发面试结束
                         }
