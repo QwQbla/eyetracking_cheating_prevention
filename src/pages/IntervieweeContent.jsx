@@ -162,7 +162,11 @@ const IntervieweeContent = () => {
             return;
         }
 
-        // 2a. 启动 Webgazer 监听 (眼动数据 P2P 发送 + 后端缓冲)
+        // 2a. 关闭鼠标点击和移动监听（校准完成后不再需要收集训练数据）
+        webgazer.removeMouseEventListeners();
+        console.log("已关闭鼠标点击和移动监听器");
+
+        // 2b. 启动 Webgazer 监听 (眼动数据 P2P 发送 + 后端缓冲)
         webgazer.setGazeListener((data) => { // 修正: _elapsedTime
             if (data == null) return;
 
@@ -191,12 +195,12 @@ const IntervieweeContent = () => {
             }
         });
 
-        // 2b. 初始化 Socket.IO 连接
+        // 2c. 初始化 Socket.IO 连接
         //const socket = io('http://localhost:8080');
         const socket = io('https://signaling.deepalgo.cn');
         socketRef.current = socket;
 
-        // 2c. Socket.IO 事件监听
+        // 2d. Socket.IO 事件监听
         socket.on('connect', () => {
             console.log('面试者：信令服务器已连接', socket.id);
             socket.emit('join-room', roomId);
@@ -228,7 +232,7 @@ const IntervieweeContent = () => {
             
         });
 
-        // 2d. WebRTC 核心逻辑
+        // 2e. WebRTC 核心逻辑
         socket.on('offer', async (offerSdp) => {
             console.log('面试者：收到 Offer');
             const pc = new RTCPeerConnection(configuration);
@@ -289,7 +293,7 @@ const IntervieweeContent = () => {
             }
         });
 
-        // 2e. 应用数据同步 (Socket.IO)
+        // 2f. 应用数据同步 (Socket.IO)
         socket.on('code-update', (newCode) => {
             setCode(newCode);
             sessionStorage.setItem(`interview_code_${roomId}`, newCode);
@@ -304,7 +308,7 @@ const IntervieweeContent = () => {
             sessionStorage.setItem(`interview_question_${roomId}`, receivedQuestion);
         });
 
-        // 2f. 清理函数
+        // 2g. 清理函数
         return () => {
             // 发送离开房间的状态更新（组件卸载时）
             if (socket && socket.connected) {
