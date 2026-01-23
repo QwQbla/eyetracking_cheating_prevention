@@ -2,11 +2,14 @@
 import React, { useRef, useCallback } from 'react';
 // import { API_ENDPOINTS } from '../api'; //
 import { RecordingContext } from './RecordingContext'; 
+import swal from 'sweetalert';
 
 export const RecordingProvider = ({ children }) => {
     const workerRef = useRef(null);
     const recorderRef = useRef(null);
     const isRecordingRef = useRef(false);
+    const startTimeRef = useRef(null);
+
 
     // 初始化 Worker 
     const initWorker = useCallback(() => {
@@ -48,6 +51,22 @@ export const RecordingProvider = ({ children }) => {
         recorderRef.current = recorder;
         isRecordingRef.current = true;
         console.log("全局录制已启动 (OPFS)");
+
+        // 1. 获取当前精确时间戳
+        const startTimestamp = Date.now();
+        startTimeRef.current = startTimestamp; // 存入 ref 供上传时使用
+
+        console.log("全局录制已启动 (OPFS), 开始时间:", startTimestamp);
+
+        // 2. 弹窗提示 (只弹一次)
+        swal({
+            title: "录制已开启",
+            text: `开始时间戳: ${startTimestamp}`, // 显示时间戳
+            icon: "success",
+            buttons: false, // 不显示按钮
+            timer: 1000,    // 1秒后自动消失，避免干扰用户
+        });
+
 
     }, [initWorker]);
 
