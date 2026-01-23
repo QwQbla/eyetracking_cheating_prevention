@@ -12,6 +12,7 @@ import '../styles/IntervieweeContent.css';
 import CalibrationPoints from '../components/CalibrationPoints';
 import HelpModal from '../components/HelpModal';
 import { useWebgazer } from '../hooks/useWebgazer';
+import { useGlobalRecording } from '../contexts/RecordingContext'; 
 // --- API ----
 import { API_ENDPOINTS } from '../api';
 
@@ -69,7 +70,7 @@ function stop_storing_points_variable() {
 function CameraCalibrationPage() {
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const { status, initializeWebgazer } = useWebgazer();
+    const { status, initializeWebgazer ,stream} = useWebgazer();
     // --- 状态定义 ---
     const [accuracy, setAccuracy] = useState(null);
     const [showCalibrationButtons, setShowCalibrationButtons] = useState(false);
@@ -82,14 +83,21 @@ function CameraCalibrationPage() {
     const plottingCanvasRef = useRef(null);
     //const helpModalRef = useRef(null);
     const calibrationClickDataRef = useRef([]); // 用于收集校准点击数据
+    // --- 录制 ---
+    const { startGlobalRecording } = useGlobalRecording(); // 获取录制方法
+    const hasStartedRecording = useRef(false); // 防止重复启动
+    
 
     // --- 辅助函数 ---
     useEffect(() => {
-      // 只有在 WebGazer 未准备好时才进行初始化
-      if (!status.isReady) {
-        initializeWebgazer();
-      }
-    }, [initializeWebgazer, status.isReady]);
+        if (!status.isReady) {
+            initializeWebgazer();
+        } else if (stream && !hasStartedRecording.current) {
+            // ***  WebGazer 准备好且有流时，启动全局录制 ***
+            startGlobalRecording(stream, roomId);
+            hasStartedRecording.current = true; 
+        }
+    }, [initializeWebgazer, status.isReady, stream, roomId, startGlobalRecording]);
 
     const ClearCanvas = useCallback(() => {
         const canvas = plottingCanvasRef.current;

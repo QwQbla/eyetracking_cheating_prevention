@@ -10,13 +10,16 @@ import IntervieweeContent from './pages/IntervieweeContent';
 import InterviewerContent from './pages/InterviewerContent';
 import CameraCalibrationPage from './pages/CameraCalibrationPage';
 import { WebgazerProvider } from './contexts/WebgazerProvider'; 
+import { RecordingProvider } from './contexts/RecordingProvider';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 // 创建一个共享 Provider 的布局组件
 const GazeTrackingLayout = () => (
     <WebgazerProvider>
-        <Outlet />
+        <RecordingProvider>
+            <Outlet />
+        </RecordingProvider>
     </WebgazerProvider>
 );
 

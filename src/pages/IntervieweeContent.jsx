@@ -11,6 +11,7 @@ import swal from 'sweetalert';
 // 相关组件与钩子 (Hooks)
 import SharedCodeEditor from '../components/SharedCodeEditor';
 import { useWebgazer } from '../hooks/useWebgazer';
+import { useGlobalRecording } from '../contexts/RecordingContext';
 
 // 样式
 import styles from '../styles/SharedLayout.module.css';
@@ -30,6 +31,7 @@ const IntervieweeContent = () => {
     const navigate = useNavigate();
     const { roomId } = useParams(); // 从 URL 获取动态房间 ID
     const { stream, shutdownWebgazer } = useWebgazer(); // 从 Context 获取共享视频流
+    const { stopAndUploadRecording } = useGlobalRecording(); // 获取停止方法
 
     // --- 状态 (State) ---
     // 从 sessionStorage 恢复代码，否则使用默认值
@@ -67,9 +69,15 @@ const IntervieweeContent = () => {
      * 最终清理函数
      * 负责停止所有正在运行的进程、关闭连接、清除定时器并导航
      */
-    const performCleanupAndNavigate = useCallback(() => {
+    const performCleanupAndNavigate = useCallback(async() => {
         console.log("正在清理资源并返回主页面...");
-        
+        //优先处理：停止录制并上传
+        stopAndUploadRecording(roomId).then(() => {
+            console.log("录制文件处理完成");
+       }).catch(err => {
+            console.error("录制文件处理失败", err);
+       });
+
         // 0. 发送离开房间的状态更新（在断开连接之前）
         if (socketRef.current) {
             const leaveStatus = {
@@ -109,7 +117,7 @@ const IntervieweeContent = () => {
         setTimeout(() => {
             navigate('/interviewee/home');
         }, 150);
-    }, [navigate, roomId, shutdownWebgazer]);
+    }, [navigate, roomId, shutdownWebgazer, stopAndUploadRecording]);
 
     /**
      * 处理由后端触发的面试时间结束事件
