@@ -264,11 +264,15 @@ const IntervieweeContent = () => {
                 }
             };
 
-            // 接收远程媒体流
+            // 接收远程媒体流（优先用 streams[0]，否则用 event.track 构造 MediaStream）
             pc.ontrack = (event) => {
-                if (remoteVideoRef.current && event.streams[0]) {
-                    remoteVideoRef.current.srcObject = event.streams[0];
-                }
+                if (!remoteVideoRef.current) return;
+                const stream = event.streams?.[0] ?? (() => {
+                    const s = new MediaStream();
+                    s.addTrack(event.track);
+                    return s;
+                })();
+                remoteVideoRef.current.srcObject = stream;
             };
 
             // 添加本地媒体流

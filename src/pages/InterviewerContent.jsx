@@ -362,10 +362,15 @@ const InterviewerContent = () => {
         pc.onicecandidate = (event) => {
             if (event.candidate) socketRef.current.emit('ice-candidate', event.candidate);
         };
+        // 接收远程媒体流（优先用 streams[0]，否则用 event.track 构造 MediaStream）
         pc.ontrack = (event) => {
-            if (remoteVideoRef.current && event.streams[0]) {
-                remoteVideoRef.current.srcObject = event.streams[0];
-            }
+            if (!remoteVideoRef.current) return;
+            const stream = event.streams?.[0] ?? (() => {
+                const s = new MediaStream();
+                s.addTrack(event.track);
+                return s;
+            })();
+            remoteVideoRef.current.srcObject = stream;
         };
 
         // 8c. 获取媒体流
