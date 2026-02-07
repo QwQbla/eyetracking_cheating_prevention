@@ -18,7 +18,13 @@ import styles from '../styles/SharedLayout.module.css';
 import '../styles/IntervieweeContent.css';
 
 const configuration = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        {
+        urls: 'turn:129.204.59.109:3478',
+        username: 'admin',
+        credential: '123456'
+        }]
 };
 
 /**
@@ -166,13 +172,13 @@ const IntervieweeContent = () => {
     // Effect 2: 核心连接 (Webgazer, Socket.IO, WebRTC)
     useEffect(() => {
         if (!stream) {
-            console.log("等待共享视频流...");
+            console.log("[Init]等待共享视频流...");
             return;
         }
 
         // 2a. 关闭鼠标点击和移动监听（校准完成后不再需要收集训练数据）
         webgazer.removeMouseEventListeners();
-        console.log("已关闭鼠标点击和移动监听器");
+        console.log("[Webgazer]已关闭鼠标点击和移动监听器");
 
         // 2b. 启动 Webgazer 监听 (眼动数据 P2P 发送 + 后端缓冲)
         webgazer.setGazeListener((data) => { // 修正: _elapsedTime
@@ -210,7 +216,7 @@ const IntervieweeContent = () => {
 
         // 2d. Socket.IO 事件监听
         socket.on('connect', () => {
-            console.log('面试者：信令服务器已连接', socket.id);
+            console.log('[Socket]面试者：信令服务器已连接', socket.id);
             socket.emit('join-room', roomId);
 
             const myStatus = {
@@ -223,7 +229,7 @@ const IntervieweeContent = () => {
         });
 
         socket.on('status-update', (data) => {
-            console.log('收到状态更新:', data.message);
+            console.log('[Status]收到状态更新:', data.message);
             setStatusLog(prevLog => [...prevLog, { ...data, id: Date.now() }]);
 
             if (data.message && data.message.includes('面试官已进入房间')) {
@@ -242,19 +248,30 @@ const IntervieweeContent = () => {
 
         // 2e. WebRTC 核心逻辑
         socket.on('offer', async (offerSdp) => {
-            console.log('面试者：收到 Offer');
+            console.log('[WebRTC]面试者：收到 Offer');
             const pc = new RTCPeerConnection(configuration);
             pcRef.current = pc;
+
+            // 1. 监听 ICE 连接状态 (对应截图: ICE 连接状态: checking/connected)
+            pc.oniceconnectionstatechange = () => {
+                console.log(`应聘者:ICE 连接状态: ${pc.iceConnectionState}`);
+            };
+
+            // 2. 监听整体连接状态 (对应截图: 连接状态: connecting)
+            pc.onconnectionstatechange = () => {
+                console.log(`应聘者:连接状态: ${pc.connectionState}`);
+            };
 
             // 接收 DataChannel
             pc.ondatachannel = (event) => {
                 const dataChannel = event.channel;
                 dataChannelRef.current = dataChannel;
-                dataChannel.onopen = () => console.log("应聘者：数据通道已开启!");
-                dataChannel.onclose = () => console.log("应聘者：数据通道已关闭。");
+                dataChannel.onopen = () => console.log("[DataChannel]应聘者：数据通道已开启!");
+                dataChannel.onclose = () => console.log("[DataChannel]应聘者：数据通道已关闭。");
                 dataChannel.onmessage = (event) => {
-                    console.log("收到面试官通过DataChannel发来的消息:", event.data);
+                    console.log("[DataChannel]收到消息:", event.data);
                 };
+                dataChannel.onerror = (err) => console.error("❌ [DataChannel] 错误:", err);
             };
 
             // ICE 候选
@@ -267,19 +284,29 @@ const IntervieweeContent = () => {
             // 接收远程媒体流（优先用 streams[0]，否则用 event.track 构造 MediaStream）
             pc.ontrack = (event) => {
                 if (!remoteVideoRef.current) return;
+                console.log(`应聘者:收到远程媒体流 ${event.streams.length} 个流`);
+
                 const stream = event.streams?.[0] ?? (() => {
                     const s = new MediaStream();
                     s.addTrack(event.track);
                     return s;
                 })();
+
                 remoteVideoRef.current.srcObject = stream;
+                console.log("应聘者:设置远程视频成功");
             };
 
             // 添加本地媒体流
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
             }
+            console.log("[WebRTC] 添加本地轨道:", stream.getTracks().map(t => ({
+                id: t.id,
+                kind: t.kind,
+                enabled: t.enabled
+            })));
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            console.log("[WebRTC] 添加本地轨道完成");
 
             // Offer/Answer 协商
             await pc.setRemoteDescription(new RTCSessionDescription(offerSdp));
@@ -287,6 +314,7 @@ const IntervieweeContent = () => {
             while (candidateQueueRef.current.length > 0) {
                 const candidate = candidateQueueRef.current.shift();
                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                console.log("[WebRTC] 添加 ICE 候选完成");
             }
 
             const answer = await pc.createAnswer();
@@ -300,6 +328,7 @@ const IntervieweeContent = () => {
         socket.on('ice-candidate', async (candidate) => {
             if (pcRef.current && pcRef.current.remoteDescription) {
                 await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+
             } else {
                 candidateQueueRef.current.push(candidate);
             }

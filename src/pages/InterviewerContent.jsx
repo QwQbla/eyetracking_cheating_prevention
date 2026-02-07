@@ -30,7 +30,13 @@ import styles from '../styles/SharedLayout.module.css';
 // --- 2. 常量 (Constants) ---
 // WebRTC 配置
 const configuration = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        {
+        urls: 'turn:129.204.59.109:3478',
+        username: 'admin',
+        credential: '123456'
+        }]
 };
 
 // I-DT 算法参数 
